@@ -2120,6 +2120,9 @@ def merge_response(
     """Merge service responses into single list.
 
     Checks that the input is a correct service response:
+    {
+        "entity_id": {str: Any},
+    }
     Returns empty list by default.
     """
     response_items: list[Any] = []

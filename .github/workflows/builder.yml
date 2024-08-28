@@ -237,7 +237,6 @@ jobs:
         run: docker run --rm -v ${{ github.workspace }}/homeassistant:/github/workspace/homeassistant ${{ env.HASSFEST_IMAGE_TAG }} --core-integrations-path=/github/workspace/homeassistant/components
 
       - name: Push Docker image
-        if: needs.init.outputs.channel != 'dev' && needs.init.outputs.publish == 'true'
         id: push
         uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
         with:
@@ -247,7 +246,6 @@ jobs:
           tags: ${{ env.HASSFEST_IMAGE_TAG }},${{ env.HASSFEST_IMAGE_NAME }}:latest
 
       - name: Generate artifact attestation
-        if: needs.init.outputs.channel != 'dev' && needs.init.outputs.publish == 'true'
         uses: actions/attest-build-provenance@6149ea5740be74af77f260b9db67e633f6b0a9a1 # v1.4.2
         with:
           subject-name: ${{ env.HASSFEST_IMAGE_NAME }}

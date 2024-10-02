@@ -284,7 +284,7 @@ class XiaomiAirHumidifier(XiaomiGenericHumidifier, HumidifierEntity):
 
         _LOGGER.debug("Setting the operation mode to: %s", mode)
         if await self._try_command(
-            "OPERATION_MODE_FAILED",
+            OPERATION_MODE_FAILED,
             self._device.set_mode,
             AirhumidifierOperationMode[mode],
         ):
@@ -329,7 +329,7 @@ class XiaomiAirHumidifierMiot(XiaomiAirHumidifier):
 
         _LOGGER.debug("Setting the humidity to: %s", target_humidity)
         if await self._try_command(
-            "OPERATION_MODE_FAILED",
+            OPERATION_MODE_FAILED,
             self._device.set_target_humidity,
             target_humidity,
         ):
@@ -362,7 +362,7 @@ class XiaomiAirHumidifierMiot(XiaomiAirHumidifier):
         _LOGGER.debug("Setting the operation mode to: %s", mode)
         if self._state:
             if await self._try_command(
-                "OPERATION_MODE_FAILED",
+                OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 self.REVERSE_MODE_MAPPING[mode],
             ):
@@ -404,7 +404,7 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
 
         _LOGGER.debug("Setting the humidity to: %s", target_humidity)
         if await self._try_command(
-            "OPERATION_MODE_FAILED",
+            OPERATION_MODE_FAILED,
             self._device.set_target_humidity,
             target_humidity,
         ):
@@ -434,7 +434,7 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
         _LOGGER.debug("Setting the operation mode to: %s", mode)
         if self._state:
             if await self._try_command(
-                "OPERATION_MODE_FAILED",
+                OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 self.MODE_MAPPING[mode],
             ):

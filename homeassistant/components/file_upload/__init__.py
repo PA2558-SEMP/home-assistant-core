@@ -172,22 +172,7 @@ class FileUploadView(HomeAssistantView):
         fut: asyncio.Future[None] | None = None
         try:
             fut = hass.async_add_executor_job(_sync_queue_consumer)
-            megabytes_sending = 0
-            while chunk := await file_field_reader.read_chunk(ONE_MEGABYTE):
-                megabytes_sending += 1
-                if megabytes_sending % 5 != 0:
-                    queue.put_nowait((chunk, None))
-                    continue
-
-                chunk_future = hass.loop.create_future()
-                queue.put_nowait((chunk, chunk_future))
-                await asyncio.wait(
-                    (fut, chunk_future), return_when=asyncio.FIRST_COMPLETED
-                )
-                if fut.done():
-                    # The executor job failed
-                    break
-
+            await self.process_file_in_chunks(file_field_reader, queue, fut, hass)
             queue.put_nowait(None)  # terminate queue consumer
         finally:
             if fut is not None:
@@ -196,6 +181,24 @@ class FileUploadView(HomeAssistantView):
         file_upload_data.files[file_id] = filename
 
         return self.json({"file_id": file_id})
+
+    async def process_file_in_chunks(self, file_field_reader: BodyPartReader, queue: SimpleQueue, fut: asyncio.Future[None], hass: HomeAssistant) -> None:
+        """Process file in chunks."""
+        megabytes_sending = 0
+        while chunk := await file_field_reader.read_chunk(ONE_MEGABYTE):
+            megabytes_sending += 1
+            if megabytes_sending % 5 != 0:
+                queue.put_nowait((chunk, None))
+                continue
+
+            chunk_future = hass.loop.create_future()
+            queue.put_nowait((chunk, chunk_future))
+            await asyncio.wait(
+                (fut, chunk_future), return_when=asyncio.FIRST_COMPLETED
+            )
+            if fut.done():
+                # The executor job failed
+                break
 
     @RequestDataValidator({vol.Required("file_id"): str})
     async def delete(self, request: web.Request, data: dict[str, str]) -> web.Response:

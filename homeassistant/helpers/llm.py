@@ -563,11 +563,6 @@ def process_select(schema: Any) -> Any:
     return {"type": "string", "enum": options}
 
 
-def process_default(schema: Any) -> Any:
-    """Handle unsupported schema."""
-    return UNSUPPORTED
-
-
 def _selector_serializer(schema: Any) -> Any:  # noqa: C901
     """Convert selectors into OpenAPI schema."""
 

@@ -1,5 +1,4 @@
 """Tests for async util methods from Python source."""
-
 import contextlib
 import glob
 import importlib
@@ -9,20 +8,13 @@ import ssl
 import time
 from typing import Any
 from unittest.mock import Mock, patch
-
 import pytest
-
 from homeassistant import block_async_io
 from homeassistant.core import HomeAssistant
-
 from .common import extract_stack_to_frame
-
-
 @pytest.fixture(autouse=True)
 def disable_block_async_io(disable_block_async_io):
     """Disable the loop protection from block_async_io after each test."""
-
-
 async def test_protect_loop_debugger_sleep(caplog: pytest.LogCaptureFixture) -> None:
     """Test time.sleep injected by the debugger is not reported."""
     block_async_io.enable()
@@ -47,8 +39,6 @@ async def test_protect_loop_debugger_sleep(caplog: pytest.LogCaptureFixture) -> 
     ):
         time.sleep(0)  # noqa: ASYNC251
     assert "Detected blocking call inside the event loop" not in caplog.text
-
-
 async def test_protect_loop_sleep() -> None:
     """Test time.sleep not injected by the debugger raises."""
     block_async_io.enable()
@@ -73,8 +63,6 @@ async def test_protect_loop_sleep() -> None:
         ),
     ):
         time.sleep(0)  # noqa: ASYNC251
-
-
 async def test_protect_loop_sleep_get_current_frame_raises() -> None:
     """Test time.sleep when get_current_frame raises ValueError."""
     block_async_io.enable()
@@ -99,8 +87,6 @@ async def test_protect_loop_sleep_get_current_frame_raises() -> None:
         ),
     ):
         time.sleep(0)  # noqa: ASYNC251
-
-
 async def test_protect_loop_importlib_import_module_non_integration(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -128,10 +114,7 @@ async def test_protect_loop_importlib_import_module_non_integration(
         block_async_io.enable()
         with pytest.raises(ImportError):
             importlib.import_module("not_loaded_module")
-
     assert "Detected blocking call to import_module" in caplog.text
-
-
 async def test_protect_loop_importlib_import_loaded_module_non_integration(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -160,8 +143,6 @@ async def test_protect_loop_importlib_import_loaded_module_non_integration(
         importlib.import_module("sys")
 
     assert "Detected blocking call to import_module" not in caplog.text
-
-
 async def test_protect_loop_importlib_import_module_in_integration(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -205,8 +186,6 @@ async def test_protect_loop_importlib_import_module_in_integration(
         "inside the event loop by "
         "integration 'hue' at homeassistant/components/hue/light.py, line 23"
     ) in caplog.text
-
-
 async def test_protect_loop_open(caplog: pytest.LogCaptureFixture) -> None:
     """Test open of a file in /proc is not reported."""
     block_async_io.enable()
@@ -216,8 +195,6 @@ async def test_protect_loop_open(caplog: pytest.LogCaptureFixture) -> None:
     ):
         pass
     assert "Detected blocking call to open with args" not in caplog.text
-
-
 async def test_protect_loop_path_open(caplog: pytest.LogCaptureFixture) -> None:
     """Test opening a file in /proc is not reported."""
     block_async_io.enable()
@@ -227,8 +204,6 @@ async def test_protect_loop_path_open(caplog: pytest.LogCaptureFixture) -> None:
     ):
         pass
     assert "Detected blocking call to open with args" not in caplog.text
-
-
 async def test_protect_open(caplog: pytest.LogCaptureFixture) -> None:
     """Test opening a file in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -240,8 +215,6 @@ async def test_protect_open(caplog: pytest.LogCaptureFixture) -> None:
         pass
 
     assert "Detected blocking call to open with args" in caplog.text
-
-
 async def test_protect_path_open(caplog: pytest.LogCaptureFixture) -> None:
     """Test opening a file in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -253,8 +226,6 @@ async def test_protect_path_open(caplog: pytest.LogCaptureFixture) -> None:
         pass
 
     assert "Detected blocking call to open with args" in caplog.text
-
-
 async def test_protect_path_read_bytes(caplog: pytest.LogCaptureFixture) -> None:
     """Test reading file bytes in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -266,8 +237,6 @@ async def test_protect_path_read_bytes(caplog: pytest.LogCaptureFixture) -> None
         pass
 
     assert "Detected blocking call to read_bytes with args" in caplog.text
-
-
 async def test_protect_path_read_text(caplog: pytest.LogCaptureFixture) -> None:
     """Test reading a file text in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -279,8 +248,6 @@ async def test_protect_path_read_text(caplog: pytest.LogCaptureFixture) -> None:
         pass
 
     assert "Detected blocking call to read_text with args" in caplog.text
-
-
 async def test_protect_path_write_bytes(caplog: pytest.LogCaptureFixture) -> None:
     """Test writing file bytes in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -292,8 +259,6 @@ async def test_protect_path_write_bytes(caplog: pytest.LogCaptureFixture) -> Non
         pass
 
     assert "Detected blocking call to write_bytes with args" in caplog.text
-
-
 async def test_protect_path_write_text(caplog: pytest.LogCaptureFixture) -> None:
     """Test writing file text in the event loop logs."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -305,8 +270,6 @@ async def test_protect_path_write_text(caplog: pytest.LogCaptureFixture) -> None
         pass
 
     assert "Detected blocking call to write_text with args" in caplog.text
-
-
 async def test_enable_multiple_times(caplog: pytest.LogCaptureFixture) -> None:
     """Test trying to enable multiple times."""
     with patch.object(block_async_io, "_IN_TESTS", False):
@@ -316,8 +279,6 @@ async def test_enable_multiple_times(caplog: pytest.LogCaptureFixture) -> None:
         RuntimeError, match="Blocking call detection is already enabled"
     ):
         block_async_io.enable()
-
-
 @pytest.mark.parametrize(
     "path",
     [
@@ -334,8 +295,6 @@ async def test_protect_open_path(path: Any, caplog: pytest.LogCaptureFixture) ->
         pass
 
     assert "Detected blocking call to open with args" in caplog.text
-
-
 async def test_protect_loop_glob(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -347,8 +306,6 @@ async def test_protect_loop_glob(
     caplog.clear()
     await hass.async_add_executor_job(glob.glob, "/dev/null")
     assert "Detected blocking call to glob with args" not in caplog.text
-
-
 async def test_protect_loop_iglob(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -360,8 +317,6 @@ async def test_protect_loop_iglob(
     caplog.clear()
     await hass.async_add_executor_job(glob.iglob, "/dev/null")
     assert "Detected blocking call to iglob with args" not in caplog.text
-
-
 async def test_protect_loop_scandir(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -375,8 +330,6 @@ async def test_protect_loop_scandir(
     with contextlib.suppress(FileNotFoundError):
         await hass.async_add_executor_job(os.scandir, "/path/that/does/not/exists")
     assert "Detected blocking call to scandir with args" not in caplog.text
-
-
 async def test_protect_loop_listdir(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -390,8 +343,6 @@ async def test_protect_loop_listdir(
     with contextlib.suppress(FileNotFoundError):
         await hass.async_add_executor_job(os.listdir, "/path/that/does/not/exists")
     assert "Detected blocking call to listdir with args" not in caplog.text
-
-
 async def test_protect_loop_walk(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -405,8 +356,6 @@ async def test_protect_loop_walk(
     with contextlib.suppress(FileNotFoundError):
         await hass.async_add_executor_job(os.walk, "/path/that/does/not/exists")
     assert "Detected blocking call to walk with args" not in caplog.text
-
-
 async def test_protect_loop_load_default_certs(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -416,8 +365,6 @@ async def test_protect_loop_load_default_certs(
     context = ssl.create_default_context()
     assert "Detected blocking call to load_default_certs" in caplog.text
     assert context
-
-
 async def test_protect_loop_load_verify_locations(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -428,8 +375,6 @@ async def test_protect_loop_load_verify_locations(
     with pytest.raises(OSError):
         context.load_verify_locations("/dev/null")
     assert "Detected blocking call to load_verify_locations" in caplog.text
-
-
 async def test_protect_loop_load_cert_chain(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -440,8 +385,6 @@ async def test_protect_loop_load_cert_chain(
     with pytest.raises(OSError):
         context.load_cert_chain("/dev/null")
     assert "Detected blocking call to load_cert_chain" in caplog.text
-
-
 async def test_open_calls_ignored_in_tests(caplog: pytest.LogCaptureFixture) -> None:
     """Test opening a file in tests is ignored."""
     assert block_async_io._IN_TESTS
@@ -451,5 +394,4 @@ async def test_open_calls_ignored_in_tests(caplog: pytest.LogCaptureFixture) -> 
         open("/config/data_not_exist", encoding="utf8"),  # noqa: ASYNC230
     ):
         pass
-
     assert "Detected blocking call to open with args" not in caplog.text

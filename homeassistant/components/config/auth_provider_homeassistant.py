@@ -195,9 +195,9 @@ async def websocket_admin_change_password(
 @websocket_api.require_admin
 @websocket_api.async_response
 async def websocket_admin_change_username(
-        hass: HomeAssistant,
-        connection: websocket_api.ActiveConnection,
-        msg: dict[str, Any],
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
 ) -> None:
     """Change the username for any user."""
     if not connection.user.is_owner:

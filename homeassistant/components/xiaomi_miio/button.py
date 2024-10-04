@@ -30,6 +30,9 @@ from .device import XiaomiCoordinatedMiioEntity
 ATTR_RESET_DUST_FILTER = "reset_dust_filter"
 ATTR_RESET_UPPER_FILTER = "reset_upper_filter"
 
+# Icons
+ICON_AIR_FILTER = "mdi:air-filter"
+
 # Vacuums
 METHOD_VACUUM_RESET_CONSUMABLE = "consumable_reset"
 ATTR_RESET_VACUUM_MAIN_BRUSH = "reset_vacuum_main_brush"
@@ -53,7 +56,7 @@ BUTTON_TYPES = (
         key=ATTR_RESET_DUST_FILTER,
         name="Reset dust filter",
         icon="mdi:air-filter",
-        method_press="reset_dust_filter",
+        method_press=ICON_AIR_FILTER,
         method_press_error_message="Resetting the dust filter lifetime failed",
         entity_category=EntityCategory.CONFIG,
     ),
@@ -61,7 +64,7 @@ BUTTON_TYPES = (
         key=ATTR_RESET_UPPER_FILTER,
         name="Reset upper filter",
         icon="mdi:air-filter",
-        method_press="reset_upper_filter",
+        method_press=ICON_AIR_FILTER,
         method_press_error_message="Resetting the upper filter lifetime failed.",
         entity_category=EntityCategory.CONFIG,
     ),
@@ -87,7 +90,7 @@ BUTTON_TYPES = (
     XiaomiMiioButtonDescription(
         key=ATTR_RESET_VACUUM_FILTER,
         name="Reset filter",
-        icon="mdi:air-filter",
+        icon=ICON_AIR_FILTER,
         method_press=METHOD_VACUUM_RESET_CONSUMABLE,
         method_press_params=Consumable.Filter,
         method_press_error_message="Resetting the filter lifetime failed.",

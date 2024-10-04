@@ -394,4 +394,5 @@ async def test_open_calls_ignored_in_tests(caplog: pytest.LogCaptureFixture) -> 
         open("/config/data_not_exist", encoding="utf8"),  # noqa: ASYNC230
     ):
         pass
+
     assert "Detected blocking call to open with args" not in caplog.text

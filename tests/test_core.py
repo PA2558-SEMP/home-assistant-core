@@ -3452,6 +3452,11 @@ async def test_async_listen_with_run_immediately_deprecated(
     """Test async_add_job warns about its deprecation."""
 
     async def _test(event: ha.Event):
+    """
+    This function is intentionally left empty as part of a test case for 
+    deprecated functionality in Home Assistant. No additional logic is 
+    required here since it's only used to trigger a deprecation warning.
+    """
         pass
 
     func = getattr(hass.bus, method)

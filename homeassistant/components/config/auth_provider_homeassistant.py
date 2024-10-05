@@ -11,6 +11,8 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import Unauthorized
 
+CREDINTIALS_NOT_FOUND = "Credentials not found"
+
 
 @callback
 def async_setup(hass: HomeAssistant) -> bool:
@@ -121,9 +123,7 @@ async def websocket_change_password(
             break
 
     if username is None:
-        connection.send_error(
-            msg["id"], "credentials_not_found", "Credentials not found"
-        )
+        connection.send_error(msg["id"], "credentials_not_found", CREDINTIALS_NOT_FOUND)
         return
 
     try:
@@ -172,9 +172,7 @@ async def websocket_admin_change_password(
             break
 
     if username is None:
-        connection.send_error(
-            msg["id"], "credentials_not_found", "Credentials not found"
-        )
+        connection.send_error(msg["id"], "credentials_not_found", CREDINTIALS_NOT_FOUND)
         return
 
     await provider.async_change_password(username, msg["password"])
@@ -213,9 +211,7 @@ async def websocket_admin_change_username(
             break
 
     if found_credential is None:
-        connection.send_error(
-            msg["id"], "credentials_not_found", "Credentials not found"
-        )
+        connection.send_error(msg["id"], "credentials_not_found", CREDINTIALS_NOT_FOUND)
         return
 
     await provider.async_change_username(found_credential, msg["username"])

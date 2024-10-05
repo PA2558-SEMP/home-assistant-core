@@ -193,4 +193,4 @@ def validate_icon_file(integration: Integration) -> None:
 def validate(integrations: dict[str, Integration], config: Config) -> None:
     """Handle JSON files inside integrations."""
     for integration in integrations.values():
-        validate_icon_file(config, integration)
+        validate_icon_file(integration)

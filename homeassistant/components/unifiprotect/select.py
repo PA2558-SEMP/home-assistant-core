@@ -258,7 +258,7 @@ LIGHT_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
     ),
     ProtectSelectEntityDescription[Light](
         key="paired_camera",
-        name="Paired camera",
+        name=PAIRED_CAMERA_NAME,
         icon="mdi:cctv",
         entity_category=EntityCategory.CONFIG,
         ufp_value="camera_id",
@@ -282,7 +282,7 @@ SENSE_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
     ),
     ProtectSelectEntityDescription[Sensor](
         key="paired_camera",
-        name="Paired camera",
+        name=PAIRED_CAMERA_NAME,
         icon="mdi:cctv",
         entity_category=EntityCategory.CONFIG,
         ufp_value="camera_id",
@@ -295,7 +295,7 @@ SENSE_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
 DOORLOCK_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
     ProtectSelectEntityDescription[Doorlock](
         key="paired_camera",
-        name="Paired camera",
+        name=PAIRED_CAMERA_NAME,
         icon="mdi:cctv",
         entity_category=EntityCategory.CONFIG,
         ufp_value="camera_id",

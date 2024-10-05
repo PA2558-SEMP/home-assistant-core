@@ -6,7 +6,7 @@ from .model import Config, Integration
 from .serializer import format_python_namespace
 
 
-def generate_and_validate(integrations: dict[str, Integration], config: Config) -> str:
+def generate_and_validate(integrations: dict[str, Integration]) -> str:
     """Validate and generate application_credentials data."""
 
     match_list = []

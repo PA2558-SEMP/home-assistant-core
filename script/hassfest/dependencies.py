@@ -58,18 +58,15 @@ class ImportCollector(ast.NodeVisitor):
             return
 
         if node.module.startswith("homeassistant.components."):
-            # from homeassistant.components.alexa.smart_home import EVENT_ALEXA_SMART_HOME
             # from homeassistant.components.logbook import bla
             self._add_reference(node.module.split(".")[2])
 
         elif node.module == "homeassistant.components":
-            # from homeassistant.components import sun
             for name_node in node.names:
                 self._add_reference(name_node.name)
 
     def visit_Import(self, node: ast.Import) -> None:
         """Visit Import node."""
-        # import homeassistant.components.hue as hue
         for name_node in node.names:
             if name_node.name.startswith("homeassistant.components."):
                 self._add_reference(name_node.name.split(".")[2])

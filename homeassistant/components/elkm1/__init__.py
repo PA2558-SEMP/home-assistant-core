@@ -511,6 +511,13 @@ class ElkEntity(Entity):
         return {"index": self._element.index + 1}
 
     def _element_changed(self, element: Element, changeset: dict[str, Any]) -> None:
+        """Handle changes in the element.
+
+        This method is intended to be overridden in subclasses
+        when specific behavior is needed to respond to changes in the 'Element' object.
+
+        Currently, this method does not perform any action but serves as an extension point for further development.
+        """
         pass
 
     @callback

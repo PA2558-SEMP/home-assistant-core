@@ -99,7 +99,7 @@ def _generate_dockerfile() -> str:
     )
 
 
-def validate(integrations: dict[str, Integration], config: Config) -> None:
+def validate(config: Config) -> None:
     """Validate dockerfile."""
     dockerfile_content = _generate_dockerfile()
     config.cache["dockerfile"] = dockerfile_content
@@ -113,7 +113,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         )
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate dockerfile."""
     dockerfile_path = config.root / "Dockerfile"
     dockerfile_path.write_text(config.cache["dockerfile"])

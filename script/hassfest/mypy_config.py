@@ -241,7 +241,7 @@ def _generate_and_validate_mypy_config(config: Config) -> str:
         return f"{HEADER}{fp.read().strip()}\n"
 
 
-def validate(integrations: dict[str, Integration], config: Config) -> None:
+def validate(config: Config) -> None:
     """Validate strict_typing and mypy config."""
     strict_typing_content = _generate_and_validate_strict_typing(config)
     config.cache["strict_typing"] = strict_typing_content
@@ -267,7 +267,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         )
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate strict_typing and mypy config."""
     _get_mypy_ini_path(config).write_text(config.cache["mypy_config"])
     _get_strict_typing_path(config).write_text(config.cache["strict_typing"])

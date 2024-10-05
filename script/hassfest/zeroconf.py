@@ -101,7 +101,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         return
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate zeroconf file."""
     zeroconf_path = config.root / "homeassistant/generated/zeroconf.py"
     with open(str(zeroconf_path), "w") as fp:

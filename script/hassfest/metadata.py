@@ -4,10 +4,10 @@ import tomllib
 
 from homeassistant.const import REQUIRED_PYTHON_VER, __version__
 
-from .model import Config, Integration
+from .model import Config
 
 
-def validate(integrations: dict[str, Integration], config: Config) -> None:
+def validate(config: Config) -> None:
     """Validate project metadata keys."""
     metadata_path = config.root / "pyproject.toml"
     with open(metadata_path, "rb") as fp:

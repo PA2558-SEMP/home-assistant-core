@@ -42,7 +42,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
             )
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate ssdp file."""
     ssdp_path = config.root / "homeassistant/generated/ssdp.py"
     with open(str(ssdp_path), "w") as fp:

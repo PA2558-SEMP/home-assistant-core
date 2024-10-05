@@ -244,7 +244,7 @@ CAMERA_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
         ufp_perm=PermRequired.WRITE,
     ),
 )
-
+PAIRED_CAMERA_NAME = "Paired camera"
 LIGHT_SELECTS: tuple[ProtectSelectEntityDescription, ...] = (
     ProtectSelectEntityDescription[Light](
         key=_KEY_LIGHT_MOTION,

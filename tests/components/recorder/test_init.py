@@ -1013,10 +1013,17 @@ async def test_defaults_set(hass: HomeAssistant) -> None:
     with patch("homeassistant.components.recorder.async_setup", side_effect=mock_setup):
         assert await async_setup_component(hass, "history", {})
 
-    
-    assert recorder_config["auto_purge"]
-    assert recorder_config["auto_repack"]
-    assert recorder_config["purge_keep_days"] == 10
+    # Removed the identity check as it is unnecessary.
+    # assert recorder_config is not None  # This line can be removed.
+
+    # Enhanced assertions with key existence checks.
+    assert "auto_purge" in recorder_config, "Missing 'auto_purge' in recorder_config"
+    assert "auto_repack" in recorder_config, "Missing 'auto_repack' in recorder_config"
+    assert "purge_keep_days" in recorder_config, "Missing 'purge_keep_days' in recorder_config"
+
+    assert recorder_config["auto_purge"], "'auto_purge' must be True"
+    assert recorder_config["auto_repack"], "'auto_repack' must be True"
+    assert recorder_config["purge_keep_days"] == 10, "'purge_keep_days' must be 10"
 
 
 async def run_tasks_at_time(hass: HomeAssistant, test_time: datetime) -> None:

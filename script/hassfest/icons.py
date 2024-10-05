@@ -11,7 +11,7 @@ from voluptuous.humanize import humanize_error
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.icon import convert_shorthand_service_icon
 
-from .model import Config, Integration
+from .model import Integration
 from .translations import translation_key_validator
 
 
@@ -190,7 +190,7 @@ def validate_icon_file(integration: Integration) -> None:
         integration.add_error("icons", f"Invalid {name}: {humanize_error(icons, err)}")
 
 
-def validate(integrations: dict[str, Integration], config: Config) -> None:
+def validate(integrations: dict[str, Integration]) -> None:
     """Handle JSON files inside integrations."""
     for integration in integrations.values():
         validate_icon_file(integration)

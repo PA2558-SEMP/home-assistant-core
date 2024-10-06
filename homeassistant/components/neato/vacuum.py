@@ -93,6 +93,58 @@ async def async_setup_entry(
     )
 
 
+def get_robot_state(state: dict[str, Any], robot_alert) -> str:
+    """Get the state of the robot."""
+    attr_state = None
+    status_state = None
+    if state["state"] == 1:
+        attr_state = STATE_IDLE
+        status_state = "Stopped"
+        if state["details"]["isCharging"]:
+            attr_state = STATE_DOCKED
+            status_state = "Charging"
+        elif state["details"]["isDocked"] and not state["details"]["isCharging"]:
+            attr_state = STATE_DOCKED
+            status_state = "Docked"
+        if robot_alert is not None:
+            status_state = robot_alert
+    elif state["state"] == 2:
+        status_state = robot_alert
+        if robot_alert is None:
+            attr_state = STATE_CLEANING
+            status_state = (
+                f"{MODE.get(state['cleaning']['mode'])} "
+                f"{ACTION.get(state['action'])}"
+            )
+            if (
+                "boundary" in state["cleaning"]
+                and "name" in state["cleaning"]["boundary"]
+            ):
+                status_state += f" {state['cleaning']['boundary']['name']}"
+    elif state["state"] == 3:
+        attr_state = STATE_PAUSED
+        status_state = "Paused"
+    elif state["state"] == 4:
+        attr_state = STATE_ERROR
+        status_state = ERRORS.get(state["error"])
+    return attr_state, status_state
+
+
+def robot_has_no_map(robot_has_map, state, robot_maps) -> bool:
+    """Check if robot has a map."""
+    return not (
+        robot_has_map
+        and state
+        and state["availableServices"]["maps"] != "basic-1"
+        and robot_maps
+    )
+
+
+def no_map_data(mapdata, robot_serial) -> bool:
+    """Check if robot has a map."""
+    return mapdata is None or not mapdata.get(robot_serial, {}).get("maps", [])
+
+
 class NeatoConnectedVacuum(NeatoEntity, StateVacuumEntity):
     """Representation of a Neato Connected Vacuum."""
 
@@ -163,54 +215,13 @@ class NeatoConnectedVacuum(NeatoEntity, StateVacuumEntity):
             return
         self._attr_available = True
         _LOGGER.debug("self._state=%s", self._state)
+        robot_alert = None
         if "alert" in self._state:
             robot_alert = ALERTS.get(self._state["alert"])
-        else:
-            robot_alert = None
-        if self._state["state"] == 1:
-            if self._state["details"]["isCharging"]:
-                self._attr_state = STATE_DOCKED
-                self._status_state = "Charging"
-            elif (
-                self._state["details"]["isDocked"]
-                and not self._state["details"]["isCharging"]
-            ):
-                self._attr_state = STATE_DOCKED
-                self._status_state = "Docked"
-            else:
-                self._attr_state = STATE_IDLE
-                self._status_state = "Stopped"
-
-            if robot_alert is not None:
-                self._status_state = robot_alert
-        elif self._state["state"] == 2:
-            if robot_alert is None:
-                self._attr_state = STATE_CLEANING
-                self._status_state = (
-                    f"{MODE.get(self._state['cleaning']['mode'])} "
-                    f"{ACTION.get(self._state['action'])}"
-                )
-                if (
-                    "boundary" in self._state["cleaning"]
-                    and "name" in self._state["cleaning"]["boundary"]
-                ):
-                    self._status_state += (
-                        f" {self._state['cleaning']['boundary']['name']}"
-                    )
-            else:
-                self._status_state = robot_alert
-        elif self._state["state"] == 3:
-            self._attr_state = STATE_PAUSED
-            self._status_state = "Paused"
-        elif self._state["state"] == 4:
-            self._attr_state = STATE_ERROR
-            self._status_state = ERRORS.get(self._state["error"])
-
+        self._attr_state, self._status_state = get_robot_state(self._state, robot_alert)
         self._attr_battery_level = self._state["details"]["charge"]
 
-        if self._mapdata is None or not self._mapdata.get(self._robot_serial, {}).get(
-            "maps", []
-        ):
+        if no_map_data(self._mapdata, self._robot_serial):
             return
 
         mapdata: dict[str, Any] = self._mapdata[self._robot_serial]["maps"][0]
@@ -225,41 +236,37 @@ class NeatoConnectedVacuum(NeatoEntity, StateVacuumEntity):
         self._clean_battery_end = mapdata["run_charge_at_end"]
         self._launched_from = mapdata["launched_from"]
 
-        if (
-            self._robot_has_map
-            and self._state
-            and self._state["availableServices"]["maps"] != "basic-1"
-            and self._robot_maps
-        ):
-            allmaps: dict = self._robot_maps[self._robot_serial]
-            _LOGGER.debug(
-                "Found the following maps for '%s': %s", self.entity_id, allmaps
-            )
-            self._robot_boundaries = []  # Reset boundaries before refreshing boundaries
-            for maps in allmaps:
-                try:
-                    robot_boundaries = self.robot.get_map_boundaries(maps["id"]).json()
-                except NeatoRobotException as ex:
-                    _LOGGER.error(
-                        "Could not fetch map boundaries for '%s': %s",
-                        self.entity_id,
-                        ex,
-                    )
-                    return
-
-                _LOGGER.debug(
-                    "Boundaries for robot '%s' in map '%s': %s",
+        if robot_has_no_map(self._robot_has_map, self._state, self._robot_maps):
+            return
+        allmaps: dict = self._robot_maps[self._robot_serial]
+        _LOGGER.debug(
+            "Found the following maps for '%s': %s", self.entity_id, allmaps
+        )
+        self._robot_boundaries = []  # Reset boundaries before refreshing boundaries
+        for maps in allmaps:
+            try:
+                robot_boundaries = self.robot.get_map_boundaries(maps["id"]).json()
+            except NeatoRobotException as ex:
+                _LOGGER.error(
+                    "Could not fetch map boundaries for '%s': %s",
                     self.entity_id,
-                    maps["name"],
-                    robot_boundaries,
+                    ex,
                 )
-                if "boundaries" in robot_boundaries["data"]:
-                    self._robot_boundaries += robot_boundaries["data"]["boundaries"]
-                    _LOGGER.debug(
-                        "List of boundaries for '%s': %s",
-                        self.entity_id,
-                        self._robot_boundaries,
-                    )
+                return
+
+            _LOGGER.debug(
+                "Boundaries for robot '%s' in map '%s': %s",
+                self.entity_id,
+                maps["name"],
+                robot_boundaries,
+            )
+            if "boundaries" in robot_boundaries["data"]:
+                self._robot_boundaries += robot_boundaries["data"]["boundaries"]
+                _LOGGER.debug(
+                    "List of boundaries for '%s': %s",
+                    self.entity_id,
+                    self._robot_boundaries,
+                )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

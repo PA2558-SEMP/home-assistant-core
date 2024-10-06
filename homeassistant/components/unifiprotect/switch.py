@@ -34,6 +34,7 @@ from .models import PermRequired, ProtectEntityDescription, ProtectSetableKeysMi
 ATTR_PREV_MIC = "prev_mic_level"
 ATTR_PREV_RECORD = "prev_record_mode"
 STATUS_Light_On="Status light on"
+MDI_LED_ON="mdi:led-on"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -61,7 +62,7 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
         name=STATUS_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_required_field="feature_flags.has_led_status",
         ufp_value="led_settings.is_enabled",
@@ -336,7 +337,7 @@ SENSE_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
         name=STATUS_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="led_settings.is_enabled",
         ufp_set_method="set_status_light",
@@ -403,7 +404,7 @@ LIGHT_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
         name=STATUS_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="light_device_settings.is_indicator_enabled",
         ufp_set_method="set_status_light",
@@ -415,7 +416,7 @@ DOORLOCK_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
         name=STATUS_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="led_settings.is_enabled",
         ufp_set_method="set_status_light",

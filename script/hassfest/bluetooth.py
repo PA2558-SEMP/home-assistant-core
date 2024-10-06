@@ -45,7 +45,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         return
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate bluetooth file."""
     bluetooth_path = config.root / "homeassistant/generated/bluetooth.py"
     with open(str(bluetooth_path), "w") as fp:

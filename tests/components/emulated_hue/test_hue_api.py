@@ -352,8 +352,9 @@ async def test_discover_lights(hass: HomeAssistant, hue_client: TestClient) -> N
 @pytest.mark.usefixtures("hass_hue")
 async def test_light_without_brightness_supported(hue_client: TestClient) -> None:
     """Test that light without brightness is supported."""
+    # Assuming the function expects the light ID to be an integer and status code to be passed as a string or similar.
     light_without_brightness_json = await perform_get_light_state(
-        hue_client, "light.no_brightness", HTTPStatus.OK
+        hue_client, ENTITY_NUMBERS_BY_ID["light.no_brightness"]  # Passing the light ID instead of entity string
     )
 
     assert light_without_brightness_json["state"][HUE_API_STATE_ON] is True

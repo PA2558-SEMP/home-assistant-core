@@ -42,7 +42,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
             )
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate MQTT file."""
     mqtt_path = config.root / "homeassistant/generated/mqtt.py"
     with open(str(mqtt_path), "w") as fp:

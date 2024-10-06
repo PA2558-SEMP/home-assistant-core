@@ -37,7 +37,7 @@ from .entity import (
 from .models import PermRequired, ProtectEntityDescription, ProtectEventMixin
 
 _KEY_DOOR = "door"
-Status_Light_On="Status light on"
+STATUS_Light_On="Status light on"
 MDI_LED_ON="mdi:led-on"
 MDI_Full_Screen="mdi:fullscreen"
 
@@ -80,7 +80,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name=Status_Light_On,
+        name=STATUS_Light_On,
         icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="feature_flags.has_led_status",
@@ -323,7 +323,7 @@ LIGHT_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name=Status_Light_On,
+        name=STATUS_Light_On,
         icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="light_device_settings.is_indicator_enabled",
@@ -373,7 +373,7 @@ SENSE_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name=Status_Light_On,
+        name=STATUS_Light_On,
         icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",
@@ -582,7 +582,7 @@ DOORLOCK_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name=Status_Light_On,
+        name=STATUS_Light_On,
         icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",

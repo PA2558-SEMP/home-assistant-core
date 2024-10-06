@@ -21,7 +21,7 @@ from .entity import AbodeDevice
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, *args, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up Abode binary sensor devices."""
     data: AbodeSystem = hass.data[DOMAIN]
@@ -38,6 +38,8 @@ async def async_setup_entry(
         AbodeBinarySensor(data, device)
         for device in data.abode.get_devices(generic_type=device_types)
     )
+
+    temporary = entry
 
 
 class AbodeBinarySensor(AbodeDevice, BinarySensorEntity):

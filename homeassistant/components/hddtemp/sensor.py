@@ -96,9 +96,8 @@ class HddTempSensor(SensorEntity):
         if self.hddtemp.data and self.disk in self.hddtemp.data:
             self._details = self.hddtemp.data[self.disk].split("|")
             self._attr_native_value = self._details[2]
-            if self._details is not None and self._details[3] == "F":
-                self._attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
-            else:
+            self._attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
+            if self._details is None or self._details[3] == "F":
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
         else:
             self._attr_native_value = None

@@ -367,7 +367,7 @@ class BaseSwitch(BasePlatform, ToggleEntity, RestoreEntity):
                 self._attr_is_on = True
             elif value == self._state_off:
                 self._attr_is_on = False
-            elif value is not None:
+            else:
                 _LOGGER.error(
                     (
                         "Unexpected response from modbus device slave %s register %s,"

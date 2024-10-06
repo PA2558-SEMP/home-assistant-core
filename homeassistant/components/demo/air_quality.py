@@ -16,7 +16,7 @@ async def async_setup_entry(
     async_add_entities(
         [DemoAirQuality("Home", 14, 23, 100), DemoAirQuality("Office", 4, 16, None)]
     )
-s
+
 
 
 class DemoAirQuality(AirQualityEntity):

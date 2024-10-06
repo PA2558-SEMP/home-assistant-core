@@ -54,11 +54,14 @@ class AirMonitorB1(XiaomiMiioEntity, AirQualityEntity):
         self._temperature = None
         self._humidity = None
 
+    
+
     async def async_update(self):
         """Fetch state from the miio device."""
+        LOG_NEW_STATE = "Got new state: %s"
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(LOG_NEW_STATE, state)
             self._carbon_dioxide_equivalent = state.co2e
             self._particulate_matter_2_5 = round(state.pm25, 1)
             self._total_volatile_organic_compounds = round(state.tvoc, 3)
@@ -131,9 +134,10 @@ class AirMonitorS1(AirMonitorB1):
 
     async def async_update(self):
         """Fetch state from the miio device."""
+        LOG_NEW_STATE = "Got new state: %s"
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(LOG_NEW_STATE, state)
             self._carbon_dioxide = state.co2
             self._particulate_matter_2_5 = state.pm25
             self._total_volatile_organic_compounds = state.tvoc
@@ -151,9 +155,10 @@ class AirMonitorV1(AirMonitorB1):
 
     async def async_update(self):
         """Fetch state from the miio device."""
+        LOG_NEW_STATE = "Got new state: %s"
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(LOG_NEW_STATE, state)
             self._air_quality_index = state.aqi
             self._available = True
         except DeviceException as ex:
@@ -182,9 +187,10 @@ class AirMonitorCGDN1(XiaomiMiioEntity, AirQualityEntity):
 
     async def async_update(self):
         """Fetch state from the miio device."""
+        LOG_NEW_STATE = "Got new state: %s"
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(LOG_NEW_STATE, state)
             self._carbon_dioxide = state.co2
             self._particulate_matter_2_5 = round(state.pm25, 1)
             self._particulate_matter_10 = round(state.pm10, 1)

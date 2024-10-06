@@ -101,7 +101,7 @@ class KNXNumber(KnxYamlEntity, RestoreNumber):
     @property
     def native_value(self) -> float:
         """Return the entity value to represent the entity state."""
-        # self._device.sensor_value.value is set in __init__ so it is never None
+        # self._device.sensor_value.value is set in __init__ so it is never None 
         return cast(float, self._device.resolve_state())
 
     async def async_set_native_value(self, value: float) -> None:

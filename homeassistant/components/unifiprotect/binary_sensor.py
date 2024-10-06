@@ -38,6 +38,7 @@ from .models import PermRequired, ProtectEntityDescription, ProtectEventMixin
 
 _KEY_DOOR = "door"
 Status_Light_On="Status light on"
+MDI_LED_ON="mdi:led-on"
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ProtectBinaryEntityDescription(
@@ -79,7 +80,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="status_light",
         name=Status_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="feature_flags.has_led_status",
         ufp_value="led_settings.is_enabled",
@@ -322,7 +323,7 @@ LIGHT_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="status_light",
         name=Status_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="light_device_settings.is_indicator_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -372,7 +373,7 @@ SENSE_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="status_light",
         name=Status_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -581,7 +582,7 @@ DOORLOCK_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="status_light",
         name=Status_Light_On,
-        icon="mdi:led-on",
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,

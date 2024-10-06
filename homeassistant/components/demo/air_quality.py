@@ -10,13 +10,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,  # <-- Removed "config_entry"
 ) -> None:
     """Set up the Demo config entry."""
     async_add_entities(
         [DemoAirQuality("Home", 14, 23, 100), DemoAirQuality("Office", 4, 16, None)]
     )
+
 
 
 class DemoAirQuality(AirQualityEntity):

@@ -164,7 +164,7 @@ def icon_schema(
     return schema
 
 
-def validate_icon_file(config: Config, integration: Integration) -> None:
+def validate_icon_file(integration: Integration) -> None:
     """Validate icon file for integration."""
     icons_file = integration.path / "icons.json"
     if not icons_file.is_file():
@@ -193,4 +193,4 @@ def validate_icon_file(config: Config, integration: Integration) -> None:
 def validate(integrations: dict[str, Integration], config: Config) -> None:
     """Handle JSON files inside integrations."""
     for integration in integrations.values():
-        validate_icon_file(config, integration)
+        validate_icon_file(integration)

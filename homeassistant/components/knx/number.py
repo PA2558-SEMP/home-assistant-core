@@ -91,17 +91,17 @@ class KNXNumber(KnxYamlEntity, RestoreNumber):
         """Restore last state."""
         await super().async_added_to_hass()
         if (
-            not self._device.sensor_value.readable
-            and (last_state := await self.async_get_last_state())
-            and (last_number_data := await self.async_get_last_number_data())
-        ):
-            if last_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+        not self._device.sensor_value.readable
+        and (last_state := await self.async_get_last_state())
+        and (last_number_data := await self.async_get_last_number_data())
+        and last_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE)
+    ):
                 self._device.sensor_value.value = last_number_data.native_value
 
     @property
     def native_value(self) -> float:
         """Return the entity value to represent the entity state."""
-        # self._device.sensor_value.value is set in __init__ so it is never None
+        # self._device.sensor_value.value is set in __init__ so it is never None 
         return cast(float, self._device.resolve_state())
 
     async def async_set_native_value(self, value: float) -> None:

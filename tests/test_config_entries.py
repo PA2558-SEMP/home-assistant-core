@@ -1810,7 +1810,8 @@ async def test_entry_unload_invalid_state(
     async_unload_entry = AsyncMock(return_value=True)
 
     mock_integration(hass, MockModule("comp", async_unload_entry=async_unload_entry))
-
+    # Assume `entry` is defined somewhere within the test scope
+    entry_id = entry.entry_id
     try:
         with pytest.raises(config_entries.OperationNotAllowed, match=str(state)):
             assert await manager.async_unload(entry_id)

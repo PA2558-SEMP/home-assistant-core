@@ -108,7 +108,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         return
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate CODEOWNERS."""
     codeowners_path = config.root / "CODEOWNERS"
     with open(str(codeowners_path), "w") as fp:

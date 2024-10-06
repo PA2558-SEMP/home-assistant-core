@@ -28,7 +28,7 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         config.root / "homeassistant/generated/application_credentials.py"
     )
     config.cache["application_credentials"] = content = generate_and_validate(
-       integrations, config
+        integrations, config
     )
 
     if config.specific_integrations:

@@ -11,7 +11,7 @@ from typing import Final
 
 from homeassistant.const import REQUIRED_PYTHON_VER
 
-from .model import Config, Integration
+from .model import Config
 
 # Component modules which should set no_implicit_reexport = true.
 NO_IMPLICIT_REEXPORT_MODULES: set[str] = {
@@ -267,7 +267,7 @@ def validate(config: Config) -> None:
         )
 
 
-def generate(integrations: dict[str, Integration], config: Config) -> None:
+def generate(config: Config) -> None:
     """Generate strict_typing and mypy config."""
     _get_mypy_ini_path(config).write_text(config.cache["mypy_config"])
     _get_strict_typing_path(config).write_text(config.cache["strict_typing"])

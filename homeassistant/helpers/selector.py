@@ -67,6 +67,10 @@ class Selector[_T: Mapping[str, Any]]:
     config: _T
     selector_type: str
 
+    def __getitem__(self, key: str) -> Any:
+        """Get an item from the config."""
+        return self.config[key]
+
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """Instantiate a selector."""
         # Selectors can be empty

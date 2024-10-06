@@ -34,7 +34,10 @@ def test_event() -> None:
     """Check that Home Assistant events are fired correctly on watchdog event."""
 
     class MockPatternMatchingEventHandler:
-        """Mock base class for the pattern matcher event handler."""
+        """Mock base class for the pattern matcher event handler.
+        This dummy class simulates the behaviour of the PatternMatchingEventHandler, therefore the __init__ method is purposefully empty. It is sufficient to evaluate event handler functionality.
+    """
+
 
         def __init__(self, patterns) -> None:
             pass
@@ -64,7 +67,10 @@ def test_move_event() -> None:
     """Check that Home Assistant events are fired correctly on watchdog event."""
 
     class MockPatternMatchingEventHandler:
-        """Mock base class for the pattern matcher event handler."""
+        """Mock base class for the pattern matcher event handler.
+        This dummy class simulates the behaviour of the PatternMatchingEventHandler, therefore the __init__ method is purposefully empty. It is sufficient to evaluate event handler functionality.
+    """
+
 
         def __init__(self, patterns) -> None:
             pass

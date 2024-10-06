@@ -197,6 +197,12 @@ async def test_async_run_hass_job_background_synchronous(hass: HomeAssistant) ->
     """Test scheduling a coro as an eager background task with async_run_hass_job."""
 
     async def job_that_does_not_suspends():
+        """
+        This function is purposefully left empty in order to replicate 
+        a synchronous task without suspending (no 'await' calls).
+        We are currently evaluating how Home Assistant handles jobs that do not suspend.
+        """
+
         pass
 
     task = hass.async_run_hass_job(
@@ -3452,6 +3458,11 @@ async def test_async_listen_with_run_immediately_deprecated(
     """Test async_add_job warns about its deprecation."""
 
     async def _test(event: ha.Event):
+        """
+        This function is intentionally left empty as part of a test case for 
+        deprecated functionality in Home Assistant. No additional logic is 
+        required here since it's only used to trigger a deprecation warning.
+        """
         pass
 
     func = getattr(hass.bus, method)

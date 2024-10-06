@@ -67,7 +67,6 @@ class ImportCollector(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         """Visit Import node."""
-        # import homeassistant.components.hue as hue
         for name_node in node.names:
             if name_node.name.startswith("homeassistant.components."):
                 self._add_reference(name_node.name.split(".")[2])

@@ -62,7 +62,6 @@ class ImportCollector(ast.NodeVisitor):
             self._add_reference(node.module.split(".")[2])
 
         elif node.module == "homeassistant.components":
-            # from homeassistant.components import sun
             for name_node in node.names:
                 self._add_reference(name_node.name)
 

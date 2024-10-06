@@ -1629,38 +1629,47 @@ class ConfigEntryStore(storage.Store[dict[str, list[dict[str, Any]]]]):
         old_data: dict[str, Any],
     ) -> dict[str, Any]:
         """Migrate to the new version."""
+
         data = old_data
-        if old_major_version == 1:
-            if old_minor_version < 2:
-                # Version 1.2 implements migration and freezes the available keys
-                for entry in data["entries"]:
-                    # Populate keys which were introduced before version 1.2
-
-                    pref_disable_new_entities = entry.get("pref_disable_new_entities")
-                    if pref_disable_new_entities is None and "system_options" in entry:
-                        pref_disable_new_entities = entry.get("system_options", {}).get(
-                            "disable_new_entities"
-                        )
-
-                    entry.setdefault("disabled_by", entry.get("disabled_by"))
-                    entry.setdefault("minor_version", entry.get("minor_version", 1))
-                    entry.setdefault("options", entry.get("options", {}))
-                    entry.setdefault(
-                        "pref_disable_new_entities", pref_disable_new_entities
-                    )
-                    entry.setdefault(
-                        "pref_disable_polling", entry.get("pref_disable_polling")
-                    )
-                    entry.setdefault("unique_id", entry.get("unique_id"))
-
-            if old_minor_version < 3:
-                # Version 1.3 adds the created_at and modified_at fields
-                created_at = utc_from_timestamp(0).isoformat()
-                for entry in data["entries"]:
-                    entry["created_at"] = entry["modified_at"] = created_at
 
         if old_major_version > 1:
             raise NotImplementedError
+
+        if old_major_version == 1:
+            if old_minor_version < 2:
+                data = self._migrate_pre_1_2(data)
+
+            if old_minor_version < 3:
+                data = self._migrate_pre_1_3(data)
+
+        return data
+
+    def _migrate_pre_1_2(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Version 1.2 implements migration and freezes the available keys."""
+
+        for entry in data["entries"]:
+            # Populate keys which were introduced before version 1.2
+            pref_disable_new_entities = entry.get("pref_disable_new_entities")
+            if pref_disable_new_entities is None and "system_options" in entry:
+                pref_disable_new_entities = entry.get("system_options", {}).get(
+                    "disable_new_entities"
+                )
+            entry.setdefault("disabled_by", entry.get("disabled_by"))
+            entry.setdefault("minor_version", entry.get("minor_version", 1))
+            entry.setdefault("options", entry.get("options", {}))
+            entry.setdefault("pref_disable_new_entities", pref_disable_new_entities)
+            entry.setdefault("pref_disable_polling", entry.get("pref_disable_polling"))
+            entry.setdefault("unique_id", entry.get("unique_id"))
+
+        return data
+
+    def _migrate_pre_1_3(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Version 1.3 adds the created_at and modified_at fields."""
+
+        created_at = utc_from_timestamp(0).isoformat()
+        for entry in data["entries"]:
+            entry["created_at"] = entry["modified_at"] = created_at
+
         return data
 
 

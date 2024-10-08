@@ -563,12 +563,18 @@ def process_select(schema: Any) -> Any:
     return {"type": "string", "enum": options}
 
 
+def process_constant(schema: Any) -> Any:
+    """Process Constant selector."""
+    return convert(vol.Schema(schema.config["value"]))
+
+
 def _selector_serializer(schema: Any) -> Any:  # noqa: C901
     """Convert selectors into OpenAPI schema."""
 
     if not isinstance(schema, selector.Selector):
         return UNSUPPORTED
 
+    # schema types that have a simple return value (simple dict)
     if type(schema) in [
         selector.BackupLocationSelector,
         selector.BooleanSelector,
@@ -600,26 +606,27 @@ def _selector_serializer(schema: Any) -> Any:  # noqa: C901
         }
         return simple_case_dict.get(type(schema))
 
+    # schema types whose return values need conversion to OpenAPI Schema object
     if type(schema) in [
         selector.ConditionSelector,
-        selector.ConstantSelector,
         selector.DurationSelector,
         selector.LocationSelector,
         selector.MediaSelector,
         selector.TargetSelector,
         selector.TriggerSelector,
     ]:
+        if type(schema) in [selector.LocationSelector, selector.MediaSelector]:
+            return convert(schema.DATA_SCHEMA)
+
         conv_case_dict = {
             selector.ConditionSelector: cv.CONDITIONS_SCHEMA,
-            selector.ConstantSelector: vol.Schema(schema.config["value"]),
             selector.DurationSelector: cv.time_period_dict,
-            selector.LocationSelector: schema.DATA_SCHEMA,
-            selector.MediaSelector: schema.DATA_SCHEMA,
             selector.TargetSelector: cv.TARGET_SERVICE_FIELDS,
             selector.TriggerSelector: cv.TRIGGER_SCHEMA,
         }
         return convert(conv_case_dict.get(type(schema)))
 
+    # schema types whose return values need a more complicated processing
     if type(schema) in [
         selector.ColorTempSelector,
         selector.CountrySelector,
@@ -627,6 +634,7 @@ def _selector_serializer(schema: Any) -> Any:  # noqa: C901
         selector.LanguageSelector,
         selector.NumberSelector,
         selector.SelectSelector,
+        selector.ConstantSelector,
     ]:
         func_case_dict = {
             selector.ColorTempSelector: process_colortemp,
@@ -635,6 +643,7 @@ def _selector_serializer(schema: Any) -> Any:  # noqa: C901
             selector.LanguageSelector: process_language,
             selector.NumberSelector: process_number,
             selector.SelectSelector: process_select,
+            selector.ConstantSelector: process_constant,
         }
         return func_case_dict.get(type(schema))(schema)
 

@@ -69,7 +69,7 @@ async def _async_reproduce_state(
         service_data[ATTR_DATETIME] = state.state
     elif has_time:
         service_data[ATTR_TIME] = state.state
-    elif has_date:
+    else:
         service_data[ATTR_DATE] = state.state
 
     await hass.services.async_call(

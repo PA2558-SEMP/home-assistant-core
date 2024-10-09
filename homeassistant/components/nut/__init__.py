@@ -196,8 +196,7 @@ def _unique_id_from_status(status: dict[str, str]) -> str | None:
         unique_id_group.append(manufacturer)
     if model:
         unique_id_group.append(model)
-    if serial:
-        unique_id_group.append(serial)
+    unique_id_group.append(serial)
     return "_".join(unique_id_group)
 
 

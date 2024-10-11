@@ -51,6 +51,7 @@ SUPPORT_SPOTIFY = (
     | MediaPlayerEntityFeature.SELECT_SOURCE
     | MediaPlayerEntityFeature.SHUFFLE_SET
     | MediaPlayerEntityFeature.VOLUME_SET
+    | MediaPlayerEntityFeature.MEDIA_QUEUE
 )
 
 REPEAT_MODE_MAPPING_TO_HA = {
@@ -129,6 +130,7 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         self.data = data
 
         self._attr_unique_id = user_id
+        self._queue = ["hejsan!:)"]
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, user_id)},
@@ -166,6 +168,13 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         if not self._currently_playing:
             return None
         return self._currently_playing.get("device", {}).get("volume_percent", 0) / 100
+
+    @property
+    def media_queue(self) -> list[str] | None:
+        """Return the media queue."""
+        if self._queue is None:
+            return None
+        return self._queue
 
     @property
     def media_content_id(self) -> str | None:

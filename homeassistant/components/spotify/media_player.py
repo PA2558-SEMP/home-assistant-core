@@ -18,6 +18,7 @@ from homeassistant.components.media_player import (
     MediaPlayerEnqueue,
     MediaPlayerEntity,
     MediaPlayerEntityFeature,
+    MediaPlayerQueueItem,
     MediaPlayerState,
     MediaType,
     RepeatMode,
@@ -33,7 +34,7 @@ from . import SpotifyConfigEntry
 from .browse_media import async_browse_media_internal
 from .const import DOMAIN, MEDIA_PLAYER_PREFIX, PLAYABLE_MEDIA_TYPES
 from .models import HomeAssistantSpotifyData
-from .util import fetch_image_url
+from .util import fetch_image_url, format_queue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +131,6 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         self.data = data
 
         self._attr_unique_id = user_id
-        self._queue = ["hejsan!:)"]
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, user_id)},
@@ -143,6 +143,7 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         self._currently_playing: dict | None = {}
         self._playlist: dict | None = None
         self._restricted_device: bool = False
+        self._queue: list[MediaPlayerQueueItem] = []
 
     @property
     def supported_features(self) -> MediaPlayerEntityFeature:
@@ -170,7 +171,7 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         return self._currently_playing.get("device", {}).get("volume_percent", 0) / 100
 
     @property
-    def media_queue(self) -> list[str] | None:
+    def media_queue(self) -> list[MediaPlayerQueueItem] | None:
         """Return the media queue."""
         if self._queue is None:
             return None
@@ -420,6 +421,9 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
         current = self.data.client.current_playback(
             additional_types=[MediaType.EPISODE]
         )
+
+        self._queue = format_queue(self.data.client.queue())
+
         self._currently_playing = current or {}
         # Record the last updated time, because Spotify's timestamp property is unreliable
         # and doesn't actually return the fetch time as is mentioned in the API description

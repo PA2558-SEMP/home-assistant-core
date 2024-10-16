@@ -50,7 +50,10 @@ async def async_setup_entry(
     calendar.prodid = PRODID
 
     name = config_entry.data[CONF_CALENDAR_NAME]
+
+    # If the data indicates that this is a ICS calendar make entity an instance of IcsCalendarEntity instead.
     entity = LocalCalendarEntity(store, calendar, name, unique_id=config_entry.entry_id)
+
     async_add_entities([entity], True)
 
 
@@ -211,3 +214,34 @@ def _get_calendar_event(event: Event) -> CalendarEvent:
         recurrence_id=event.recurrence_id,
         location=event.location,
     )
+
+
+class IcsCalendarEntity(CalendarEntity):
+    """A calendar entity backed by a .ics file on the network."""
+
+    def __init__(
+        self,
+        store: LocalCalendarStore,
+        calendar: Calendar,
+        name: str,
+        unique_id: str,
+    ) -> None:
+        """Initialize IcsCalendarEntity."""
+        self._store = store
+        self._calendar = calendar
+        self._event: CalendarEvent | None = None
+        self._attr_name = name
+        self._attr_unique_id = unique_id
+
+    async def async_get_events(
+        self,
+        hass: HomeAssistant,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> list[CalendarEvent]:
+        """Return calendar events within a datetime range for a ICS calendar."""
+        events = self._calendar.timeline_tz(start_date.tzinfo).overlapping(
+            start_date,
+            end_date,
+        )
+        return [_get_calendar_event(event) for event in events]

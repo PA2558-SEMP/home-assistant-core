@@ -117,6 +117,8 @@ class LocalTodoListEntity(TodoListEntity):
         | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
         | TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
         | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
+        | TodoListEntityFeature.SORT_BY_DATE_ITEM
+        | TodoListEntityFeature.SORT_BY_PRIORITY_ITEM
     )
     _attr_should_poll = False
 
@@ -207,3 +209,12 @@ class LocalTodoListEntity(TodoListEntity):
         """Persist the todo list to disk."""
         content = IcsCalendarStream.calendar_to_ics(self._calendar)
         await self._store.async_store(content)
+
+    async def async_sort_date(self) -> None:
+        """Sort the todo list by due date."""
+        todos = self._calendar.todos
+        todos.sort(
+            key=lambda x: (x.due is None, x.due if x.due else datetime.datetime.min)
+        )
+        await self.async_save()
+        await self.async_update_ha_state(force_refresh=True)

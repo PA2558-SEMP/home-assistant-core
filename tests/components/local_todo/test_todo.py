@@ -1,6 +1,7 @@
 """Tests for todo platform of local_todo."""
 
 from collections.abc import Awaitable, Callable
+import datetime
 import textwrap
 from typing import Any
 
@@ -23,6 +24,29 @@ from homeassistant.core import HomeAssistant
 from .conftest import TEST_ENTITY
 
 from tests.typing import WebSocketGenerator
+
+
+class TodoItem:
+    """Contains single to-do item with a due-date."""
+
+    def __init__(self, due: datetime.datetime | None) -> None:
+        """Initialise to-do item with a due-date."""
+
+        self.due = due
+
+
+class TodoCalendar:
+    """Represents calendar for managing list of to-do items."""
+
+    def __init__(self, todos: list[TodoItem]) -> None:
+        """Initialise a calendar with a list of to-do items."""
+        self.todos = todos
+
+    def sort_date(self) -> None:
+        """Sort the todo list by due date in ascending order."""
+        self.todos.sort(
+            key=lambda x: (x.due is None, x.due if x.due else datetime.datetime.min)
+        )
 
 
 @pytest.fixture
@@ -799,3 +823,76 @@ async def test_susbcribe(
     assert items[0]["summary"] == "milk"
     assert items[0]["status"] == "needs_action"
     assert "uid" in items[0]
+
+
+@pytest.mark.parametrize(
+    ("todos", "expected_todos"),
+    [
+        (
+            [
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(datetime.datetime(2024, 5, 1)),
+                TodoItem(datetime.datetime(2023, 12, 31)),
+            ],
+            [
+                TodoItem(datetime.datetime(2023, 12, 31)),
+                TodoItem(datetime.datetime(2024, 5, 1)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+            ],
+        ),
+        (
+            [
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(None),
+                TodoItem(datetime.datetime(2024, 5, 1)),
+                TodoItem(datetime.datetime(2023, 12, 31)),
+                TodoItem(None),
+            ],
+            [
+                TodoItem(datetime.datetime(2023, 12, 31)),
+                TodoItem(datetime.datetime(2024, 5, 1)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(None),
+                TodoItem(None),
+            ],
+        ),
+        (
+            [
+                TodoItem(None),
+                TodoItem(None),
+                TodoItem(None),
+            ],
+            [
+                TodoItem(None),
+                TodoItem(None),
+                TodoItem(None),
+            ],
+        ),
+        (
+            [
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+            ],
+            [
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+                TodoItem(datetime.datetime(2024, 10, 10)),
+            ],
+        ),
+    ],
+)
+async def test_sort_date(todos, expected_todos) -> None:
+    """Test sorting todo items by due date."""
+
+    # Create an instance of the TodoCalendar with the list of todos
+    todo_calendar = TodoCalendar(todos)
+
+    # Call the sort function
+    todo_calendar.sort_date()
+
+    # Verify that the todos were sorted correctly based on due date
+    for sorted_todo, expected_todo in zip(
+        todo_calendar.todos, expected_todos, strict=True
+    ):
+        assert sorted_todo.due == expected_todo.due

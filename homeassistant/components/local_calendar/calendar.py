@@ -112,20 +112,11 @@ class LocalCalendarEntity(CalendarEntity):
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
         """Get all events in a specific time frame."""
-        events = self._calendar.timeline_tz(start_date.tzinfo).overlapping(
-            start_date,
-            end_date,
-        )
-        return [_get_calendar_event(event) for event in events]
+        return _return_events(self._calendar, start_date, end_date)
 
     async def async_update(self) -> None:
         """Update entity state with the next upcoming event."""
-        now = dt_util.now()
-        events = self._calendar.timeline_tz(now.tzinfo).active_after(now)
-        if event := next(events, None):
-            self._event = _get_calendar_event(event)
-        else:
-            self._event = None
+        self._event = _return_next_event(self._calendar)
 
     async def _async_store(self) -> None:
         """Persist the calendar to disk."""
@@ -239,7 +230,7 @@ def _get_calendar_event(event: Event) -> CalendarEvent:
 
 
 class IcsCalendarEntity(CalendarEntity):
-    """A calendar entity backed by a .ics file on the network."""
+    """A calendar entity backed by an .ics file on the network."""
 
     def __init__(
         self,
@@ -263,17 +254,25 @@ class IcsCalendarEntity(CalendarEntity):
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
         """Get all events in a specific time frame."""
-        events = self._calendar.timeline_tz(start_date.tzinfo).overlapping(
-            start_date,
-            end_date,
-        )
-        return [_get_calendar_event(event) for event in events]
+        return _return_events(self._calendar, start_date, end_date)
 
     async def async_update(self) -> None:
         """Update entity state with the next upcoming event."""
-        now = dt_util.now()
-        events = self._calendar.timeline_tz(now.tzinfo).active_after(now)
-        if event := next(events, None):
-            self._event = _get_calendar_event(event)
-        else:
-            self._event = None
+        self._event = _return_next_event(self._calendar)
+
+
+def _return_next_event(_calendar: Calendar) -> CalendarEvent | None:
+    """Return the next upcoming event."""
+    now = dt_util.now()
+    events = _calendar.timeline_tz(now.tzinfo).active_after(now)
+    if event := next(events, None):
+        return _get_calendar_event(event)
+    return None
+
+
+def _return_events(
+    _calendar: Calendar, start_date: datetime, end_date: datetime
+) -> list[CalendarEvent]:
+    """Return all events in the time range."""
+    events = _calendar.timeline_tz(start_date.tzinfo).overlapping(start_date, end_date)
+    return [_get_calendar_event(event) for event in events]

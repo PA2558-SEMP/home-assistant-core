@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
+from aiohttp import ClientConnectionError, ClientError
 from ical.calendar import Calendar
 from ical.calendar_stream import IcsCalendarStream
 from ical.event import Event
@@ -25,10 +26,11 @@ from homeassistant.components.calendar import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CALENDAR_NAME, DOMAIN
+from .const import CONF_CALENDAR_NAME, CONF_URL_NAME, DOMAIN
 from .store import LocalCalendarStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +45,20 @@ async def async_setup_entry(
 ) -> None:
     """Set up the local calendar platform."""
     store = hass.data[DOMAIN][config_entry.entry_id]
-    ics = await store.async_load()
+    url = None
+    if CONF_URL_NAME not in config_entry.data:
+        ics = await store.async_load()
+    else:
+        url = config_entry.data[CONF_URL_NAME]
+        session = async_get_clientsession(hass)
+        try:
+            async with session.get(url) as response:
+                ics = await response.text()
+        except ClientConnectionError:
+            _LOGGER.error("Connection error while fetching data from API")
+        except ClientError as e:
+            _LOGGER.error("Client error occurred: %s", e)
+
     calendar: Calendar = await hass.async_add_executor_job(
         IcsCalendarStream.calendar_from_ics, ics
     )
@@ -51,8 +66,15 @@ async def async_setup_entry(
 
     name = config_entry.data[CONF_CALENDAR_NAME]
 
-    # If the data indicates that this is a ICS calendar make entity an instance of IcsCalendarEntity instead.
-    entity = LocalCalendarEntity(store, calendar, name, unique_id=config_entry.entry_id)
+    entity: LocalCalendarEntity | IcsCalendarEntity
+    if not url:
+        entity = LocalCalendarEntity(
+            store, calendar, name, unique_id=config_entry.entry_id
+        )
+    else:
+        entity = IcsCalendarEntity(
+            calendar, name, unique_id=config_entry.entry_id, url=url
+        )
 
     async_add_entities([entity], True)
 
@@ -90,20 +112,11 @@ class LocalCalendarEntity(CalendarEntity):
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
         """Get all events in a specific time frame."""
-        events = self._calendar.timeline_tz(start_date.tzinfo).overlapping(
-            start_date,
-            end_date,
-        )
-        return [_get_calendar_event(event) for event in events]
+        return _return_events(self._calendar, start_date, end_date)
 
     async def async_update(self) -> None:
         """Update entity state with the next upcoming event."""
-        now = dt_util.now()
-        events = self._calendar.timeline_tz(now.tzinfo).active_after(now)
-        if event := next(events, None):
-            self._event = _get_calendar_event(event)
-        else:
-            self._event = None
+        self._event = _return_next_event(self._calendar)
 
     async def _async_store(self) -> None:
         """Persist the calendar to disk."""
@@ -217,31 +230,49 @@ def _get_calendar_event(event: Event) -> CalendarEvent:
 
 
 class IcsCalendarEntity(CalendarEntity):
-    """A calendar entity backed by a .ics file on the network."""
+    """A calendar entity backed by an .ics file on the network."""
 
     def __init__(
         self,
-        store: LocalCalendarStore,
         calendar: Calendar,
         name: str,
         unique_id: str,
+        url: str,
     ) -> None:
         """Initialize IcsCalendarEntity."""
-        self._store = store
         self._calendar = calendar
         self._event: CalendarEvent | None = None
         self._attr_name = name
         self._attr_unique_id = unique_id
 
+    @property
+    def event(self) -> CalendarEvent | None:
+        """Return the next upcoming event."""
+        return self._event
+
     async def async_get_events(
-        self,
-        hass: HomeAssistant,
-        start_date: datetime,
-        end_date: datetime,
+        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
-        """Return calendar events within a datetime range for a ICS calendar."""
-        events = self._calendar.timeline_tz(start_date.tzinfo).overlapping(
-            start_date,
-            end_date,
-        )
-        return [_get_calendar_event(event) for event in events]
+        """Get all events in a specific time frame."""
+        return _return_events(self._calendar, start_date, end_date)
+
+    async def async_update(self) -> None:
+        """Update entity state with the next upcoming event."""
+        self._event = _return_next_event(self._calendar)
+
+
+def _return_next_event(_calendar: Calendar) -> CalendarEvent | None:
+    """Return the next upcoming event."""
+    now = dt_util.now()
+    events = _calendar.timeline_tz(now.tzinfo).active_after(now)
+    if event := next(events, None):
+        return _get_calendar_event(event)
+    return None
+
+
+def _return_events(
+    _calendar: Calendar, start_date: datetime, end_date: datetime
+) -> list[CalendarEvent]:
+    """Return all events in the time range."""
+    events = _calendar.timeline_tz(start_date.tzinfo).overlapping(start_date, end_date)
+    return [_get_calendar_event(event) for event in events]

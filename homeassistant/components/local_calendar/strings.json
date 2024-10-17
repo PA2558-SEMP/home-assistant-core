@@ -5,6 +5,7 @@
       "user": {
         "description": "Please choose a name for your new calendar",
         "data": {
+          "url_name": "Url Name",
           "calendar_name": "Calendar Name"
         }
       }

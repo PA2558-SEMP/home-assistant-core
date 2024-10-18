@@ -11,7 +11,11 @@ from aiohttp import ClientWebSocketResponse
 import pytest
 
 from homeassistant.components.local_calendar import LocalCalendarStore
-from homeassistant.components.local_calendar.const import CONF_CALENDAR_NAME, DOMAIN
+from homeassistant.components.local_calendar.const import (
+    CONF_CALENDAR_NAME,
+    CONF_URL_NAME,
+    DOMAIN,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -22,6 +26,24 @@ CALENDAR_NAME = "Light Schedule"
 FRIENDLY_NAME = "Light Schedule"
 STORAGE_KEY = "light_schedule"
 TEST_ENTITY = "calendar.light_schedule"
+MOCK_ICS_CONTENT_STR = """BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//YourOrganization//NONSGML v1.0//EN
+BEGIN:VEVENT
+UID:12345678-9abc-def0-1234-56789abcdef0
+DTSTAMP:20231016T120000Z
+DTSTART:20231020T130000Z
+DTEND:20231020T140000Z
+SUMMARY:Test Event
+LOCATION:Test Location
+BEGIN:VALARM
+TRIGGER:-PT10M
+ACTION:DISPLAY
+DESCRIPTION:Reminder for the test event
+END:VALARM
+END:VEVENT
+END:VCALENDAR
+"""
 
 
 class FakeStore(LocalCalendarStore):
@@ -102,6 +124,28 @@ def mock_config_entry() -> MockConfigEntry:
 async def setup_integration(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
     """Set up the integration."""
     config_entry.add_to_hass(hass)
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+
+
+@pytest.fixture(name="config_ics_entry")
+def mock_ics_config_entry() -> MockConfigEntry:
+    """Fixture for mock configuration entry."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_CALENDAR_NAME: CALENDAR_NAME,
+            CONF_URL_NAME: "http://example.com/api/data",
+        },
+    )
+
+
+@pytest.fixture(name="setup_ics_integration")
+async def setup_ics_integration(
+    hass: HomeAssistant, config_ics_entry: MockConfigEntry
+) -> None:
+    """Set up the integration."""
+    config_ics_entry.add_to_hass(hass)
     assert await async_setup_component(hass, DOMAIN, {})
     await hass.async_block_till_done()
 

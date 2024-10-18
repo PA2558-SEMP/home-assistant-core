@@ -23,6 +23,16 @@
           "description": "Identifier that was defined when creating the task."
         }
       }
+    },
+    "postpone_task": {
+      "name": "Postpone task",
+      "description": "Postpones a task that was previously created.",
+      "fields": {
+        "id": {
+          "name": "ID",
+          "description": "Identifier that was defined when creating the task."
+        }
+      }
     }
   }
 }

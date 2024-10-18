@@ -19,3 +19,11 @@ complete_task:
       example: myid
       selector:
         text:
+
+postpone_task:
+  fields:
+    id:
+      required: true
+      example: myid
+      selector:
+        text:

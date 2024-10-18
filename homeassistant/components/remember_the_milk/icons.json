@@ -5,6 +5,9 @@
     },
     "complete_task": {
       "service": "mdi:check-all"
+    },
+    "postpone_task": {
+      "service": "mdi:clock-outline"
     }
   }
 }

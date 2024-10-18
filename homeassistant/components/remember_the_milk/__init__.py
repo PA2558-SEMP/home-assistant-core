@@ -1,5 +1,6 @@
 """Support to interact with Remember The Milk."""
 
+import datetime
 import json
 import logging
 import os
@@ -43,6 +44,7 @@ CONFIG_SCHEMA = vol.Schema(
 CONFIG_FILE_NAME = ".remember_the_milk.conf"
 SERVICE_CREATE_TASK = "create_task"
 SERVICE_COMPLETE_TASK = "complete_task"
+SERVICE_POSTPONE_TASK = "postpone_task"
 
 SERVICE_SCHEMA_CREATE_TASK = vol.Schema(
     {vol.Required(CONF_NAME): cv.string, vol.Optional(CONF_ID): cv.string}
@@ -50,12 +52,18 @@ SERVICE_SCHEMA_CREATE_TASK = vol.Schema(
 
 SERVICE_SCHEMA_COMPLETE_TASK = vol.Schema({vol.Required(CONF_ID): cv.string})
 
+SERVICE_SCHEMA_POSTPONE_TASK = vol.Schema({vol.Required(CONF_ID): cv.string})
+
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Remember the milk component."""
     component = EntityComponent[RememberTheMilk](_LOGGER, DOMAIN, hass)
 
     stored_rtm_config = RememberTheMilkConfiguration(hass)
+
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = {}
+
     for rtm_config in config[DOMAIN]:
         account_name = rtm_config[CONF_NAME]
         _LOGGER.info("Adding Remember the milk account %s", account_name)
@@ -64,7 +72,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         token = stored_rtm_config.get_token(account_name)
         if token:
             _LOGGER.debug("found token for account %s", account_name)
-            _create_instance(
+            rtm_entity = _create_instance(
                 hass,
                 account_name,
                 api_key,
@@ -73,20 +81,54 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 stored_rtm_config,
                 component,
             )
+            hass.data[DOMAIN][account_name] = rtm_entity
         else:
             _register_new_account(
                 hass, account_name, api_key, shared_secret, stored_rtm_config, component
             )
 
-    _LOGGER.debug("Finished adding all Remember the milk accounts")
+    hass.bus.async_listen(
+        "zone.leave", lambda event: handle_zone_leave(event, hass, account_name)
+    )
+    _LOGGER.debug(
+        "Finished adding all Remember the milk accounts and event handler for zone.leave"
+    )
     return True
+
+
+def handle_zone_leave(event, hass, account_name):
+    """Handle the event when the user leaves the home zone."""
+
+    zone = event.data["event_data"]["zone"]
+    entity_id = event.data["event_data"]["entity_id"]
+
+    if zone is None:
+        _LOGGER.error("No zone in event data")
+        return
+
+    if entity_id is None:
+        _LOGGER.error("No entity_id in event data")
+        return
+
+    if zone == "zone.home":
+        rtm_entity = hass.data[DOMAIN].get(account_name)
+
+        if rtm_entity:
+            rtm_entity.notify_tasks_due_today()
+        else:
+            _LOGGER.error("RTM entity for account %s not found", account_name)
 
 
 def _create_instance(
     hass, account_name, api_key, shared_secret, token, stored_rtm_config, component
 ):
     entity = RememberTheMilk(
-        account_name, api_key, shared_secret, token, stored_rtm_config
+        hass,
+        account_name,
+        api_key,
+        shared_secret,
+        token,
+        stored_rtm_config,
     )
     component.add_entities([entity])
     hass.services.register(
@@ -101,13 +143,21 @@ def _create_instance(
         entity.complete_task,
         schema=SERVICE_SCHEMA_COMPLETE_TASK,
     )
+    hass.services.register(
+        DOMAIN,
+        f"{account_name}_postpone_task",
+        entity.postpone_task,
+        schema=SERVICE_SCHEMA_POSTPONE_TASK,
+    )
+
+    return entity
 
 
 def _register_new_account(
     hass, account_name, api_key, shared_secret, stored_rtm_config, component
 ):
     request_id = None
-    api = Rtm(api_key, shared_secret, "write", None)
+    api = Rtm(api_key, shared_secret, "delete", None)
     url, frob = api.authenticate_desktop()
     _LOGGER.debug("Sent authentication request to server")
 
@@ -242,8 +292,9 @@ class RememberTheMilkConfiguration:
 class RememberTheMilk(Entity):
     """Representation of an interface to Remember The Milk."""
 
-    def __init__(self, name, api_key, shared_secret, token, rtm_config):
+    def __init__(self, hass, name, api_key, shared_secret, token, rtm_config):
         """Create new instance of Remember The Milk component."""
+        self.hass = hass
         self._name = name
         self._api_key = api_key
         self._shared_secret = shared_secret
@@ -356,6 +407,63 @@ class RememberTheMilk(Entity):
                 self._name,
                 rtm_exception,
             )
+
+    def postpone_task(self, call: ServiceCall) -> None:
+        """Postpone a task that was previously created by this component."""
+        hass_id = call.data[CONF_ID]
+        rtm_id = self._rtm_config.get_rtm_id(self._name, hass_id)
+        if rtm_id is None:
+            _LOGGER.error(
+                (
+                    "Could not find task with ID %s in account %s. "
+                    "So task could not be postponed"
+                ),
+                hass_id,
+                self._name,
+            )
+            return
+        try:
+            result = self._rtm_api.rtm.timelines.create()
+            timeline = result.timeline.value
+            self._rtm_api.rtm.tasks.postpone(
+                list_id=rtm_id[0],
+                taskseries_id=rtm_id[1],
+                task_id=rtm_id[2],
+                timeline=timeline,
+            )
+        except RtmRequestFailedException as rtm_exception:
+            _LOGGER.error(
+                "Error postponing Remember The Milk task for account %s: %s",
+                self._name,
+                rtm_exception,
+            )
+
+    def notify_tasks_due_today(self):
+        """Fetch tasks due today from Remember The Milk and send a notification."""
+        try:
+            today = datetime.datetime.now().strftime("%Y-%m-%d")
+            tasks = []
+            result = self._rtm_api.rtm.tasks.getList(filter=f"due:{today}")
+
+            if result.tasks.list is not None:
+                tasks = list(result.tasks.list)
+
+            if tasks:
+                task_list = "\n".join([f"- {task.name}" for task in tasks])
+                message = f"You have the following tasks due today:\n{task_list}"
+            else:
+                message = "You have no tasks due today, enjoy your day."
+
+            self.hass.services.call(
+                "persistent_notification",
+                "create",
+                {
+                    "message": message,
+                    "title": "Daily-Todo",
+                },
+            )
+        except RtmRequestFailedException as e:
+            _LOGGER.error("Error fetching tasks due today: %s", e)
 
     @property
     def name(self):

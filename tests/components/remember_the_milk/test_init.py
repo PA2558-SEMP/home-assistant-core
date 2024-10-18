@@ -3,7 +3,7 @@
 from unittest.mock import Mock, mock_open, patch
 
 import homeassistant.components.remember_the_milk as rtm
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant
 
 from .const import JSON_STRING, PROFILE, TOKEN
 
@@ -68,3 +68,33 @@ def test_load_key_map(hass: HomeAssistant) -> None:
     ):
         config = rtm.RememberTheMilkConfiguration(hass)
     assert config.get_rtm_id(PROFILE, "1234") == ("0", "1", "2")
+
+
+def test_handle_zone_leave_home_zone(hass: HomeAssistant) -> None:
+    """Test handle_zone_leave triggers notify_tasks_due_today on leaving home zone."""
+    mock_rtm_entity = Mock()
+    account_name = "test_account"
+    hass.data = {"remember_the_milk": {account_name: mock_rtm_entity}}
+
+    event_data = {
+        "event_data": {"zone": "zone.home", "entity_id": "device_tracker.myphone"}
+    }
+    event = Event("zone.leave", event_data)
+
+    rtm.handle_zone_leave(event, hass, account_name)
+    mock_rtm_entity.notify_tasks_due_today.assert_called_once()
+
+
+def test_handle_zone_leave_non_home_zone(hass: HomeAssistant) -> None:
+    """Test handle_zone_leave does nothing when leaving a non-home zone."""
+    mock_rtm_entity = Mock()
+    account_name = "test_account"
+    hass.data = {"remember_the_milk": {account_name: mock_rtm_entity}}
+
+    event_data = {
+        "event_data": {"zone": "zone.work", "entity_id": "device_tracker.myphone"}
+    }
+    event = Event("zone.leave", event_data)
+
+    rtm.handle_zone_leave(event, hass, account_name)
+    mock_rtm_entity.notify_tasks_due_today.assert_not_called()

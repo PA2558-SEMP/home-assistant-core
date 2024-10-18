@@ -34,11 +34,13 @@ from .const import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
+    ATTR_PRIORITY,  # NEWCODE
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN,
     TodoItemStatus,
     TodoListEntityFeature,
+    TodoPriority,  # NEWCODE
     TodoServices,
 )
 
@@ -85,6 +87,13 @@ TODO_ITEM_FIELDS = [
         validation=vol.Any(cv.string, None),
         todo_item_field=ATTR_DESCRIPTION,
         required_feature=TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM,
+    ),
+    # NEWCODE
+    TodoItemFieldDescription(
+        service_field=ATTR_PRIORITY,
+        validation=vol.Any(TodoPriority, None),
+        todo_item_field=ATTR_PRIORITY,
+        required_feature=TodoListEntityFeature.SET_PRIORITY_ON_ITEM,
     ),
 ]
 
@@ -230,6 +239,10 @@ class TodoItem:
     This field may be set when TodoListEntityFeature.DESCRIPTION is supported by
     the entity.
     """
+
+    # NEWCODE
+    priority: TodoPriority | None = None
+    """A priority for the To-do item."""
 
 
 CACHED_PROPERTIES_WITH_ATTR_ = {
@@ -460,6 +473,7 @@ def _find_by_uid_or_summary(
     return None
 
 
+# First entry point!
 async def _async_add_todo_item(entity: TodoListEntity, call: ServiceCall) -> None:
     """Add an item to the To-do list."""
     _validate_supported_features(entity.supported_features, call.data)

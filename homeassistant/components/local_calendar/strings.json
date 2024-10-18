@@ -3,9 +3,9 @@
   "config": {
     "step": {
       "user": {
-        "description": "Please choose a name for your new calendar",
+        "description": "Please choose a name for your new calendar, if you add a ICS url it will import your ICS calendar, omit it to use a local calendar.",
         "data": {
-          "url_name": "Url Name",
+          "url_name": "Import ICS URL",
           "calendar_name": "Calendar Name"
         }
       }

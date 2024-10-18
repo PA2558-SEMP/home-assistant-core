@@ -473,7 +473,7 @@ def _find_by_uid_or_summary(
     return None
 
 
-# erster Einstiegspunkt!
+# First entry point!
 async def _async_add_todo_item(entity: TodoListEntity, call: ServiceCall) -> None:
     """Add an item to the To-do list."""
     _validate_supported_features(entity.supported_features, call.data)

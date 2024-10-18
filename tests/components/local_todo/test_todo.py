@@ -1,7 +1,6 @@
 """Tests for todo platform of local_todo."""
 
 from collections.abc import Awaitable, Callable
-import datetime
 import textwrap
 from typing import Any
 
@@ -24,29 +23,6 @@ from homeassistant.core import HomeAssistant
 from .conftest import TEST_ENTITY
 
 from tests.typing import WebSocketGenerator
-
-
-class TodoItem:
-    """Contains single to-do item with a due-date."""
-
-    def __init__(self, due: datetime.datetime | None) -> None:
-        """Initialise to-do item with a due-date."""
-
-        self.due = due
-
-
-class TodoCalendar:
-    """Represents calendar for managing list of to-do items."""
-
-    def __init__(self, todos: list[TodoItem]) -> None:
-        """Initialise a calendar with a list of to-do items."""
-        self.todos = todos
-
-    def sort_date(self) -> None:
-        """Sort the todo list by due date in ascending order."""
-        self.todos.sort(
-            key=lambda x: (x.due is None, x.due if x.due else datetime.datetime.min)
-        )
 
 
 @pytest.fixture
@@ -826,73 +802,76 @@ async def test_susbcribe(
 
 
 @pytest.mark.parametrize(
-    ("todos", "expected_todos"),
+    ("todos", "expected_order"),
     [
         (
             [
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(datetime.datetime(2024, 5, 1)),
-                TodoItem(datetime.datetime(2023, 12, 31)),
+                {"summary": "Task A", "due": "2024-01-01"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2023-05-24"},
             ],
-            [
-                TodoItem(datetime.datetime(2023, 12, 31)),
-                TodoItem(datetime.datetime(2024, 5, 1)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
-            ],
+            ["Task C", "Task A", "Task B"],
         ),
         (
             [
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(None),
-                TodoItem(datetime.datetime(2024, 5, 1)),
-                TodoItem(datetime.datetime(2023, 12, 31)),
-                TodoItem(None),
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": "2023-01-01"},
+                {"summary": "Task D", "due": None},
+                {"summary": "Task E", "due": "2024-05-24"},
             ],
-            [
-                TodoItem(datetime.datetime(2023, 12, 31)),
-                TodoItem(datetime.datetime(2024, 5, 1)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(None),
-                TodoItem(None),
-            ],
+            ["Task C", "Task E", "Task A", "Task B", "Task D"],
         ),
         (
             [
-                TodoItem(None),
-                TodoItem(None),
-                TodoItem(None),
+                {"summary": "Task A", "due": None},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": None},
             ],
-            [
-                TodoItem(None),
-                TodoItem(None),
-                TodoItem(None),
-            ],
+            ["Task A", "Task B", "Task C"],
         ),
         (
             [
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2024-10-17"},
             ],
-            [
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
-                TodoItem(datetime.datetime(2024, 10, 10)),
-            ],
+            ["Task A", "Task B", "Task C"],
         ),
     ],
 )
-async def test_sort_date(todos, expected_todos) -> None:
+async def test_sort_date(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    setup_integration: None,
+    ws_get_items: Callable[[], Awaitable[dict[str, str]]],
+    todos: list[dict[str, Any]],
+    expected_order: list[str],
+) -> None:
     """Test sorting todo items by due date."""
 
-    # Create an instance of the TodoCalendar with the list of todos
-    todo_calendar = TodoCalendar(todos)
+    # Add items to to-do list with due date
+    for todo in todos:
+        await hass.services.async_call(
+            TODO_DOMAIN,
+            TodoServices.ADD_ITEM,
+            {ATTR_ITEM: todo["summary"], ATTR_DUE_DATE: todo["due"]},
+            target={ATTR_ENTITY_ID: TEST_ENTITY},
+            blocking=True,
+        )
 
-    # Call the sort function
-    todo_calendar.sort_date()
+    client = await hass_ws_client(hass)
+    # Send a websocket command to sort added items by due date
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortDate",
+            "entity_id": TEST_ENTITY,
+        }
+    )
 
-    # Verify that the todos were sorted correctly based on due date
-    for sorted_todo, expected_todo in zip(
-        todo_calendar.todos, expected_todos, strict=True
-    ):
-        assert sorted_todo.due == expected_todo.due
+    # Retrieve sorted to-do items and their summaries
+    sorted_items = await ws_get_items()
+    sorted_summaries = [item["summary"] for item in sorted_items]
+
+    assert sorted_summaries == expected_order

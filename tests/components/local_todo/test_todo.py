@@ -799,3 +799,79 @@ async def test_susbcribe(
     assert items[0]["summary"] == "milk"
     assert items[0]["status"] == "needs_action"
     assert "uid" in items[0]
+
+
+@pytest.mark.parametrize(
+    ("todos", "expected_order"),
+    [
+        (
+            [
+                {"summary": "Task A", "due": "2024-01-01"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2023-05-24"},
+            ],
+            ["Task C", "Task A", "Task B"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": "2023-01-01"},
+                {"summary": "Task D", "due": None},
+                {"summary": "Task E", "due": "2024-05-24"},
+            ],
+            ["Task C", "Task E", "Task A", "Task B", "Task D"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": None},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": None},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2024-10-17"},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+    ],
+)
+async def test_sort_date(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    setup_integration: None,
+    ws_get_items: Callable[[], Awaitable[dict[str, str]]],
+    todos: list[dict[str, Any]],
+    expected_order: list[str],
+) -> None:
+    """Test sorting todo items by due date."""
+
+    # Add items to to-do list with due date
+    for todo in todos:
+        await hass.services.async_call(
+            TODO_DOMAIN,
+            TodoServices.ADD_ITEM,
+            {ATTR_ITEM: todo["summary"], ATTR_DUE_DATE: todo["due"]},
+            target={ATTR_ENTITY_ID: TEST_ENTITY},
+            blocking=True,
+        )
+
+    client = await hass_ws_client(hass)
+    # Send a websocket command to sort added items by due date
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortDate",
+            "entity_id": TEST_ENTITY,
+        }
+    )
+
+    # Retrieve sorted to-do items and their summaries
+    sorted_items = await ws_get_items()
+    sorted_summaries = [item["summary"] for item in sorted_items]
+
+    assert sorted_summaries == expected_order

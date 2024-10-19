@@ -91,7 +91,7 @@ TODO_ITEM_FIELDS = [
     # NEWCODE
     TodoItemFieldDescription(
         service_field=ATTR_PRIORITY,
-        validation=vol.Any(TodoPriority, None),
+        validation=vol.Any(cv.string, None),
         todo_item_field=ATTR_PRIORITY,
         required_feature=TodoListEntityFeature.SET_PRIORITY_ON_ITEM,
     ),

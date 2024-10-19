@@ -100,9 +100,9 @@
     },
     "priority": {
       "options": {
-        "low": "Low",
-        "medium": "Medium",
-        "high": "High"
+        "low": "low",
+        "medium": "medium",
+        "high": "high"
       }
     }
   },

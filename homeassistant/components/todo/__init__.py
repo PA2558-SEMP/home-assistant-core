@@ -121,6 +121,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, websocket_handle_todo_item_list)
     websocket_api.async_register_command(hass, websocket_handle_todo_item_move)
     websocket_api.async_register_command(hass, websocket_handle_todo_item_sort_date)
+    websocket_api.async_register_command(hass, websocket_handle_todo_item_sort_priority)
 
     component.async_register_entity_service(
         TodoServices.ADD_ITEM,
@@ -270,6 +271,10 @@ class TodoListEntity(Entity, cached_properties=CACHED_PROPERTIES_WITH_ATTR_):
         raise NotImplementedError
 
     async def async_sort_date(self) -> None:
+        """Sort the To-do list by date."""
+        raise NotImplementedError
+
+    async def async_sort_priority(self) -> None:
         """Sort the To-do list by date."""
         raise NotImplementedError
 
@@ -485,6 +490,42 @@ async def websocket_handle_todo_item_sort_date(
         return
     try:
         await entity.async_sort_date()
+    except HomeAssistantError as ex:
+        connection.send_error(msg["id"], "failed", str(ex))
+    else:
+        connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "todo/item/sortPriority",
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+@websocket_api.async_response
+async def websocket_handle_todo_item_sort_priority(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Handle move of a To-do item within a To-do list."""
+    component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
+    if not (entity := component.get_entity(msg["entity_id"])):
+        connection.send_error(msg["id"], ERR_NOT_FOUND, "Entity not found")
+        return
+
+    if (
+        not entity.supported_features
+        or not entity.supported_features & TodoListEntityFeature.SORT_BY_PRIORITY_ITEM
+    ):
+        connection.send_message(
+            websocket_api.error_message(
+                msg["id"],
+                ERR_NOT_SUPPORTED,
+                "To-do list does not support To-do item reordering",
+            )
+        )
+        return
+    try:
+        await entity.async_sort_priority()
     except HomeAssistantError as ex:
         connection.send_error(msg["id"], "failed", str(ex))
     else:

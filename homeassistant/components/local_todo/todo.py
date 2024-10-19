@@ -218,3 +218,15 @@ class LocalTodoListEntity(TodoListEntity):
         )
         await self.async_save()
         await self.async_update_ha_state(force_refresh=True)
+
+    async def async_sort_prio(self) -> None:
+        """Sort the todo list by priority."""
+        todos = self._calendar.todos
+        todos.sort(
+            key=lambda todo: (
+                todo.priority is None,
+                todo.priority if todo.priority else None,
+            )
+        )
+        await self.async_save()
+        await self.async_update_ha_state(force_refresh=True)

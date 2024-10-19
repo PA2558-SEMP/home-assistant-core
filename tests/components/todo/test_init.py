@@ -176,12 +176,14 @@ def mock_test_entity(test_entity_items: list[TodoItem]) -> TodoListEntity:
         | TodoListEntityFeature.DELETE_TODO_ITEM
         | TodoListEntityFeature.MOVE_TODO_ITEM
         | TodoListEntityFeature.SORT_BY_DATE_ITEM
+        | TodoListEntityFeature.SORT_BY_PRIORITY_ITEM
     )
     entity1.async_create_todo_item = AsyncMock(wraps=entity1.async_create_todo_item)
     entity1.async_update_todo_item = AsyncMock()
     entity1.async_delete_todo_items = AsyncMock(wraps=entity1.async_delete_todo_items)
     entity1.async_move_todo_item = AsyncMock()
     entity1.async_sort_date = AsyncMock()
+    entity1.async_sort_priority = AsyncMock()
     return entity1
 
 
@@ -217,7 +219,7 @@ async def test_list_todo_items(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {"supported_features": 15 + 128}
+    assert state.attributes == {"supported_features": 15 + 128 + 256}
 
     client = await hass_ws_client(hass)
     await client.send_json(
@@ -260,7 +262,7 @@ async def test_get_items_service(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 15 + 128}
+    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 15 + 128 + 256}
 
     result = await hass.services.async_call(
         DOMAIN,
@@ -423,6 +425,14 @@ async def test_add_item_service_invalid_input(
         ),
         (
             TodoListEntityFeature.SORT_BY_DATE_ITEM,
+            {},
+            TodoItem(
+                summary="New item",
+                status=TodoItemStatus.NEEDS_ACTION,
+            ),
+        ),
+        (
+            TodoListEntityFeature.SORT_BY_PRIORITY_ITEM,
             {},
             TodoItem(
                 summary="New item",
@@ -1212,7 +1222,7 @@ async def test_sort_todo_items_by_date_service_invalid_input(
     assert expected_error in resp.get("error", {}).get("message")
 
 
-async def test_sort_item_unsupported(
+async def test_sort_date_item_unsupported(
     hass: HomeAssistant,
     hass_ws_client: WebSocketGenerator,
 ) -> None:
@@ -1227,6 +1237,130 @@ async def test_sort_item_unsupported(
         {
             "id": 1,
             "type": "todo/item/sortDate",
+            "entity_id": "todo.entity1",
+        }
+    )
+    resp = await client.receive_json()
+    assert resp.get("id") == 1
+    assert resp.get("error", {}).get("code") == "not_supported"
+
+
+async def test_sort_todo_items_by_priority_service(
+    hass: HomeAssistant,
+    test_entity: TodoListEntity,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Test sorting items by priority in a To-do list."""
+
+    await create_mock_platform(hass, [test_entity])
+
+    client = await hass_ws_client()
+
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
+            "entity_id": "todo.entity1",
+        }
+    )
+
+    resp = await client.receive_json()
+
+    assert resp.get("id") == 1
+    assert resp.get("success")
+
+    args = test_entity.async_sort_priority.call_args
+    assert args
+
+
+async def test_sort_todo_items_by_priority_service_raises(
+    hass: HomeAssistant,
+    test_entity: TodoListEntity,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Test sorting items in a To-do list that raises an error."""
+
+    await create_mock_platform(hass, [test_entity])
+
+    test_entity.async_sort_priority.side_effect = HomeAssistantError("Sorting failed")
+    client = await hass_ws_client()
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
+            "entity_id": "todo.entity1",
+        }
+    )
+    resp = await client.receive_json()
+
+    assert resp.get("id") == 1
+    assert resp.get("error", {}).get("code") == "failed"
+    assert resp.get("error", {}).get("message") == "Sorting failed"
+
+
+@pytest.mark.parametrize(
+    ("item_data", "expected_status", "expected_error"),
+    [
+        (
+            {"entity_id": "todo.unknown"},
+            "not_found",
+            "Entity not found",
+        ),
+        (
+            {},
+            "invalid_format",
+            "required key not provided",
+        ),
+        (
+            {"entity_id": "todo.entity1", "uid": "item-1"},
+            "invalid_format",
+            "extra keys not allowed @ data['uid']. Got 'item-1'",
+        ),
+    ],
+)
+async def test_sort_todo_items_by_priority_service_invalid_input(
+    hass: HomeAssistant,
+    test_entity: TodoListEntity,
+    hass_ws_client: WebSocketGenerator,
+    item_data: dict[str, Any],
+    expected_status: str,
+    expected_error: str,
+) -> None:
+    """Test invalid input for the sort by priority service."""
+
+    await create_mock_platform(hass, [test_entity])
+
+    client = await hass_ws_client()
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
+            **item_data,
+        }
+    )
+
+    resp = await client.receive_json()
+
+    assert resp.get("id") == 1
+    assert resp.get("error", {}).get("code") == expected_status
+    assert expected_error in resp.get("error", {}).get("message")
+
+
+async def test_sort_priority_item_unsupported(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Test sorting items by priority when not supported."""
+
+    entity1 = TodoListEntity()
+    entity1.entity_id = "todo.entity1"
+    await create_mock_platform(hass, [entity1])
+
+    client = await hass_ws_client()
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
             "entity_id": "todo.entity1",
         }
     )
@@ -1424,6 +1558,7 @@ async def test_subscribe(
                 "status": "needs_action",
                 "due": None,
                 "description": None,
+                "priority": None,
             },
             {
                 "summary": "Item #2",
@@ -1431,6 +1566,7 @@ async def test_subscribe(
                 "status": "completed",
                 "due": None,
                 "description": None,
+                "priority": None,
             },
         ]
     }
@@ -1450,6 +1586,7 @@ async def test_subscribe(
                 "status": "needs_action",
                 "due": None,
                 "description": None,
+                "priority": None,
             },
             {
                 "summary": "Item #2",
@@ -1457,6 +1594,7 @@ async def test_subscribe(
                 "status": "completed",
                 "due": None,
                 "description": None,
+                "priority": None,
             },
             {
                 "summary": "Item #3",
@@ -1464,6 +1602,7 @@ async def test_subscribe(
                 "status": "needs_action",
                 "due": None,
                 "description": None,
+                "priority": None,
             },
         ]
     }

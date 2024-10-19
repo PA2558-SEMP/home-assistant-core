@@ -12,9 +12,11 @@ from homeassistant.components.todo import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
+    ATTR_PRIORITY,
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN as TODO_DOMAIN,
+    TodoPriority,
     TodoServices,
 )
 from homeassistant.const import ATTR_ENTITY_ID
@@ -871,6 +873,62 @@ async def test_sort_date(
     )
 
     # Retrieve sorted to-do items and their summaries
+    sorted_items = await ws_get_items()
+    sorted_summaries = [item["summary"] for item in sorted_items]
+
+    assert sorted_summaries == expected_order
+
+
+@pytest.mark.parametrize(
+    ("todos", "expected_order"),
+    [
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task B", "priority": TodoPriority.LOW},
+                {"summary": "Task C", "priority": TodoPriority.HIGH},
+            ],
+            ["Task C", "Task A", "Task B"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task B", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task C", "priority": TodoPriority.MEDIUM},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+    ],
+)
+async def test_sort_priority(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    setup_integration: None,
+    ws_get_items: Callable[[], Awaitable[dict[str, str]]],
+    todos: list[dict[str, Any]],
+    expected_order: list[str],
+) -> None:
+    """Test sorting to-do items by priority."""
+
+    # Add items to to-do list with due date
+    for todo in todos:
+        await hass.services.async_call(
+            TODO_DOMAIN,
+            TodoServices.ADD_ITEM,
+            {ATTR_ITEM: todo["summary"], ATTR_PRIORITY: todo["priority"]},
+            target={ATTR_ENTITY_ID: TEST_ENTITY},
+            blocking=True,
+        )
+    client = await hass_ws_client(hass)
+    # Send a websocket command to sort added items by priority
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
+            "entity_id": TEST_ENTITY,
+        }
+    )
+
     sorted_items = await ws_get_items()
     sorted_summaries = [item["summary"] for item in sorted_items]
 

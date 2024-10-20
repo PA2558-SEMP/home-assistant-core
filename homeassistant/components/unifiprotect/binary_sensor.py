@@ -37,7 +37,11 @@ from .entity import (
 from .models import PermRequired, ProtectEntityDescription, ProtectEventMixin
 
 _KEY_DOOR = "door"
-
+STATUS_Light_On="Status light on"
+MDI_LED_ON="mdi:led-on"
+MDI_Full_Screen="mdi:fullscreen"
+MDI_walk="mdi:walk"
+MDI_CAR="mdi:car"
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ProtectBinaryEntityDescription(
@@ -78,8 +82,8 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="feature_flags.has_led_status",
         ufp_value="led_settings.is_enabled",
@@ -116,7 +120,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="osd_name",
         name="Overlay: show name",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="osd_settings.is_name_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -124,7 +128,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="osd_date",
         name="Overlay: show date",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="osd_settings.is_date_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -140,7 +144,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="osd_bitrate",
         name="Overlay: show bitrate",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="osd_settings.is_debug_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -155,7 +159,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="smart_person",
         name="Detections: person",
-        icon="mdi:walk",
+        icon=MDI_walk,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="can_detect_person",
         ufp_value="is_person_detection_on",
@@ -164,7 +168,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="smart_vehicle",
         name="Detections: vehicle",
-        icon="mdi:car",
+        icon=MDI_CAR,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="can_detect_vehicle",
         ufp_value="is_vehicle_detection_on",
@@ -191,7 +195,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="smart_licenseplate",
         name="Detections: license plate",
-        icon="mdi:car",
+        icon=MDI_CAR,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="can_detect_license_plate",
         ufp_value="is_license_plate_detection_on",
@@ -254,7 +258,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="smart_car_alarm",
         name="Detections: car alarm",
-        icon="mdi:car",
+        icon=MDI_CAR,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="can_detect_car_alarm",
         ufp_value="is_car_alarm_detection_on",
@@ -281,7 +285,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="track_person",
         name="Tracking: person",
-        icon="mdi:walk",
+        icon=MDI_walk,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="feature_flags.is_ptz",
         ufp_value="is_person_tracking_enabled",
@@ -321,8 +325,8 @@ LIGHT_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="light_device_settings.is_indicator_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -371,8 +375,8 @@ SENSE_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -380,7 +384,7 @@ SENSE_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="motion_enabled",
         name="Motion detection",
-        icon="mdi:walk",
+        icon=MDI_walk,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="motion_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -445,7 +449,7 @@ EVENT_SENSORS: tuple[ProtectBinaryEventEntityDescription, ...] = (
     ProtectBinaryEventEntityDescription(
         key="smart_obj_person",
         name="Person detected",
-        icon="mdi:walk",
+        icon=MDI_walk,
         ufp_obj_type=SmartDetectObjectType.PERSON,
         ufp_required_field="can_detect_person",
         ufp_enabled="is_person_detection_on",
@@ -454,7 +458,7 @@ EVENT_SENSORS: tuple[ProtectBinaryEventEntityDescription, ...] = (
     ProtectBinaryEventEntityDescription(
         key="smart_obj_vehicle",
         name="Vehicle detected",
-        icon="mdi:car",
+        icon=MDI_CAR,
         ufp_obj_type=SmartDetectObjectType.VEHICLE,
         ufp_required_field="can_detect_vehicle",
         ufp_enabled="is_vehicle_detection_on",
@@ -544,7 +548,7 @@ EVENT_SENSORS: tuple[ProtectBinaryEventEntityDescription, ...] = (
     ProtectBinaryEventEntityDescription(
         key="smart_audio_car_alarm",
         name="Car alarm detected",
-        icon="mdi:car",
+        icon=MDI_CAR,
         ufp_obj_type=SmartDetectObjectType.BURGLAR,
         ufp_required_field="can_detect_car_alarm",
         ufp_enabled="is_car_alarm_detection_on",
@@ -580,8 +584,8 @@ DOORLOCK_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ),
     ProtectBinaryEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="led_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,

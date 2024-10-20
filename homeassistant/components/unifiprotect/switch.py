@@ -33,6 +33,9 @@ from .models import PermRequired, ProtectEntityDescription, ProtectSetableKeysMi
 
 ATTR_PREV_MIC = "prev_mic_level"
 ATTR_PREV_RECORD = "prev_record_mode"
+STATUS_Light_On="Status light on"
+MDI_LED_ON="mdi:led-on"
+#MDI_Full_Screen="mdi:fullscreen"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -59,8 +62,8 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ),
     ProtectSwitchEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_required_field="feature_flags.has_led_status",
         ufp_value="led_settings.is_enabled",
@@ -102,7 +105,7 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="osd_name",
         name="Overlay: show name",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.CONFIG,
         ufp_value="osd_settings.is_name_enabled",
         ufp_set_method="set_osd_name",
@@ -120,7 +123,7 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="osd_logo",
         name="Overlay: show logo",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.CONFIG,
         ufp_value="osd_settings.is_logo_enabled",
         ufp_set_method="set_osd_logo",
@@ -129,7 +132,7 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="osd_bitrate",
         name="Overlay: show nerd mode",
-        icon="mdi:fullscreen",
+        icon=MDI_Full_Screen,
         entity_category=EntityCategory.CONFIG,
         ufp_value="osd_settings.is_debug_enabled",
         ufp_set_method="set_osd_bitrate",
@@ -334,8 +337,8 @@ PRIVACY_MODE_SWITCH = ProtectSwitchEntityDescription[Camera](
 SENSE_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="led_settings.is_enabled",
         ufp_set_method="set_status_light",
@@ -401,8 +404,8 @@ LIGHT_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ),
     ProtectSwitchEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="light_device_settings.is_indicator_enabled",
         ufp_set_method="set_status_light",
@@ -413,8 +416,8 @@ LIGHT_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
 DOORLOCK_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
-        name="Status light on",
-        icon="mdi:led-on",
+        name=STATUS_Light_On,
+        icon=MDI_LED_ON,
         entity_category=EntityCategory.CONFIG,
         ufp_value="led_settings.is_enabled",
         ufp_set_method="set_status_light",

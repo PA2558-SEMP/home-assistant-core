@@ -224,7 +224,7 @@ class ProtectMediaSource(MediaSource):
             return PlayMedia(
                 async_generate_thumbnail_url(event.id, nvr.id), "image/jpeg"
             )
-        return PlayMedia(async_generate_event_video_url(event), "video/mp4")
+        return PlayMedia(async_generate_event_video_url(event), VIDEO_FORMAT)
 
     async def async_browse_media(self, item: MediaSourceItem) -> BrowseMediaSource:
         """Return a browsable UniFi Protect media source.
@@ -462,7 +462,7 @@ class ProtectMediaSource(MediaSource):
             domain=DOMAIN,
             identifier=f"{nvr.id}:event:{event_id}",
             media_class=MediaClass.VIDEO,
-            media_content_type="video/mp4",
+            media_content_type=VIDEO_FORMAT,
             title=title,
             can_play=True,
             can_expand=False,
@@ -526,7 +526,7 @@ class ProtectMediaSource(MediaSource):
             domain=DOMAIN,
             identifier=f"{base_id}:recent:{days}",
             media_class=MediaClass.DIRECTORY,
-            media_content_type="video/mp4",
+            media_content_type=VIDEO_FORMAT,
             title=title,
             can_play=False,
             can_expand=True,

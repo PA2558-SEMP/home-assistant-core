@@ -558,9 +558,8 @@ class FlowManager(abc.ABC, Generic[_FlowResultT, _HandlerT]):
         elif result["type"] != FlowResultType.SHOW_PROGRESS:
             flow.async_cancel_progress_task()
 
-        if result["type"] in STEP_ID_OPTIONAL_STEPS:
-            if "step_id" not in result:
-                result["step_id"] = step_id
+        if result["type"] in STEP_ID_OPTIONAL_STEPS and "step_id" not in result:
+            result["step_id"] = step_id
 
         if result["type"] in FLOW_NOT_COMPLETE_STEPS:
             self._raise_if_step_does_not_exist(flow, result["step_id"])

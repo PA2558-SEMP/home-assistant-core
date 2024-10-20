@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+import logging
 from typing import Any, cast
+
+from dateutil.parser import isoparse
 
 from homeassistant.components.todo import (
     TodoItem,
@@ -22,6 +25,7 @@ from .const import DOMAIN
 from .coordinator import TaskUpdateCoordinator
 
 SCAN_INTERVAL = timedelta(minutes=15)
+_LOGGER = logging.getLogger(__name__)
 
 TODO_STATUS_MAP = {
     "needsAction": TodoItemStatus.NEEDS_ACTION,
@@ -136,6 +140,7 @@ class GoogleTaskTodoListEntity(
             task=_convert_todo_item(item),
         )
         await self.coordinator.async_refresh()
+        await self._store_tasks_for_email(self.coordinator.data)
 
     async def async_delete_todo_items(self, uids: list[str]) -> None:
         """Delete To-do items."""
@@ -148,6 +153,94 @@ class GoogleTaskTodoListEntity(
         """Re-order a To-do item."""
         await self.coordinator.api.move(self._task_list_id, uid, previous=previous_uid)
         await self.coordinator.async_refresh()
+
+    # Helper function to store tasks due today
+    async def _store_tasks_for_email(self, tasks: list[TodoItem]) -> None:
+        """Store tasks in an input_text helper for later email."""
+        categorized_tasks = self.categorize_tasks(tasks)
+        task_summaries_today = "This is the list of tasks due today:\n"
+        task_summaries_today += "\n".join(
+            [f"- {task['title']}" for task in categorized_tasks["Today"]]
+        )
+        task_summaries_thisweek = "This is the list of tasks due this week:\n"
+        task_summaries_thisweek += "\n".join(
+            [f"- {task['title']}" for task in categorized_tasks["This Week"]]
+        )
+        task_summaries_upcoming = (
+            "This is the list of upcoming tasks in future weeks:\n"
+        )
+        task_summaries_upcoming += "\n".join(
+            [f"- {task['title']}" for task in categorized_tasks["Upcoming"]]
+        )
+
+        task_summaries_overdue = (
+            "This is the list of overdue tasks which need your action:\n"
+        )
+        task_summaries_overdue += "\n".join(
+            [f"- {task['title']}" for task in categorized_tasks["Overdue"]]
+        )
+
+        # Store the task summaries as text in the input_text helpers
+        if len(categorized_tasks["Today"]) > 0:
+            await self._write_task_summaries(
+                task_summaries_today, "input_text.stored_task_data"
+            )
+        if len(categorized_tasks["This Week"]) > 0:
+            await self._write_task_summaries(
+                task_summaries_thisweek, "input_text.stored_weekly_task_data"
+            )
+        if len(categorized_tasks["Upcoming"]) > 0:
+            await self._write_task_summaries(
+                task_summaries_upcoming, "input_text.stored_upcoming_task_data"
+            )
+        if len(categorized_tasks["Overdue"]) > 0:
+            await self._write_task_summaries(
+                task_summaries_overdue, "input_text.stored_overdue_task_data"
+            )
+
+    async def _write_task_summaries(self, text_value: str, input_text_id: str):
+        await self.hass.services.async_call(
+            "input_text",
+            "set_value",
+            {
+                "entity_id": input_text_id,
+                "value": text_value,
+            },
+        )
+
+    # Categorize tasks by due date as "Today","This Week" and "Upcoming" and return the task list categorized
+    def categorize_tasks(
+        self, tasks: list[dict[str, Any]]
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Categorize tasks by due date."""
+        current_date = date.today()
+        # get the start and end dates of the current week
+        week_start = current_date - timedelta(days=current_date.weekday())
+        week_end = week_start + timedelta(days=6)
+        # Dictionary to keep the categorized tasks
+        categorized_tasks: dict[str, list[dict[str, Any]]] = {
+            "Today": [],
+            "This Week": [],
+            "Upcoming": [],
+            "Overdue": [],
+        }
+        for task in tasks:
+            due_date = None
+            due_str = task.get("due")
+            task_status = task.get("status")
+            if due_str:
+                parsed_date = isoparse(due_str)
+                due_date = parsed_date.date()
+            if due_date:
+                if due_date == current_date:
+                    categorized_tasks["Today"].append(task)
+                elif week_start <= due_date and due_date <= week_end:
+                    categorized_tasks["This Week"].append(task)
+                elif due_date > week_end:
+                    categorized_tasks["Upcoming"].append(task)
+                elif due_date < week_start and task_status == "needsAction":
+                    categorized_tasks["Overdue"].append(task)
+        return categorized_tasks
 
 
 def _order_tasks(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -11,7 +11,6 @@ ATTR_DESCRIPTION = "description"
 ATTR_ITEM = "item"
 ATTR_RENAME = "rename"
 ATTR_STATUS = "status"
-# NEWCODE
 ATTR_PRIORITY = "priority"
 
 
@@ -37,7 +36,7 @@ class TodoListEntityFeature(IntFlag):
     SET_DESCRIPTION_ON_ITEM = 64
     SORT_BY_DATE_ITEM = 128
     SORT_BY_PRIORITY_ITEM = 256
-    SET_PRIORITY_ON_ITEM = 512  # NEWCODE
+    SET_PRIORITY_ON_ITEM = 512
 
 
 class TodoItemStatus(StrEnum):
@@ -50,7 +49,6 @@ class TodoItemStatus(StrEnum):
     COMPLETED = "completed"
 
 
-# NEWCODE
 class TodoPriority(StrEnum):
     """Supported values for the priority of a To-do entity."""
 

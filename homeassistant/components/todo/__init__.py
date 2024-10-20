@@ -34,13 +34,13 @@ from .const import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
-    ATTR_PRIORITY,  # NEWCODE
+    ATTR_PRIORITY,
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN,
     TodoItemStatus,
     TodoListEntityFeature,
-    TodoPriority,  # NEWCODE
+    TodoPriority,
     TodoServices,
 )
 
@@ -88,7 +88,6 @@ TODO_ITEM_FIELDS = [
         todo_item_field=ATTR_DESCRIPTION,
         required_feature=TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM,
     ),
-    # NEWCODE
     TodoItemFieldDescription(
         service_field=ATTR_PRIORITY,
         validation=vol.Any(cv.string, None),
@@ -242,7 +241,6 @@ class TodoItem:
     the entity.
     """
 
-    # NEWCODE
     priority: TodoPriority | None = None
     """A priority for the To-do item."""
 

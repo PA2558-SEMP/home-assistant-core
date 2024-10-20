@@ -16,6 +16,7 @@ from homeassistant.components.todo import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
+    ATTR_PRIORITY,
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN,
@@ -23,6 +24,7 @@ from homeassistant.components.todo import (
     TodoItemStatus,
     TodoListEntity,
     TodoListEntityFeature,
+    TodoPriority,
     TodoServices,
     intent as todo_intent,
 )
@@ -219,7 +221,7 @@ async def test_list_todo_items(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {"supported_features": 15 + 128 + 256}
+    assert state.attributes == {"supported_features": 15}
 
     client = await hass_ws_client(hass)
     await client.send_json(
@@ -262,7 +264,7 @@ async def test_get_items_service(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 15 + 128 + 256}
+    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 15}
 
     result = await hass.services.async_call(
         DOMAIN,
@@ -321,6 +323,7 @@ async def test_add_item_service(
     assert item.uid is None
     assert item.summary == "New item"
     assert item.status == TodoItemStatus.NEEDS_ACTION
+    assert item.priority is None
 
 
 async def test_add_item_service_raises(
@@ -424,19 +427,12 @@ async def test_add_item_service_invalid_input(
             ),
         ),
         (
-            TodoListEntityFeature.SORT_BY_DATE_ITEM,
-            {},
+            TodoListEntityFeature.SET_PRIORITY_ON_ITEM,
+            {ATTR_ITEM: "New item", ATTR_PRIORITY: "low"},
             TodoItem(
                 summary="New item",
                 status=TodoItemStatus.NEEDS_ACTION,
-            ),
-        ),
-        (
-            TodoListEntityFeature.SORT_BY_PRIORITY_ITEM,
-            {},
-            TodoItem(
-                summary="New item",
-                status=TodoItemStatus.NEEDS_ACTION,
+                priority=TodoPriority.LOW,
             ),
         ),
     ],
@@ -730,6 +726,16 @@ async def test_update_todo_item_field_unsupported(
                 description="Submit revised draft",
             ),
         ),
+        (
+            TodoListEntityFeature.SET_PRIORITY_ON_ITEM,
+            {"priority": "high"},
+            TodoItem(
+                uid="1",
+                summary="Item #1",
+                status=TodoItemStatus.NEEDS_ACTION,
+                priority=TodoPriority.HIGH,
+            ),
+        ),
     ],
 )
 async def test_update_todo_item_extended_fields(
@@ -808,6 +814,11 @@ async def test_update_todo_item_extended_fields(
             {"due_datetime": None},
             TodoItem(uid="1", summary="Summary"),
         ),
+        (
+            [TodoItem(uid="1", summary="Summary", priority=TodoPriority.LOW)],
+            {"priority": "high"},
+            TodoItem(uid="1", summary="Summary", priority=TodoPriority.HIGH),
+        ),
     ],
     ids=[
         "overwrite_description",
@@ -817,6 +828,7 @@ async def test_update_todo_item_extended_fields(
         "clear_due_date",
         "overwrite_due_date_with_time",
         "clear_due_date_time",
+        "overwrite_priority",
     ],
 )
 async def test_update_todo_item_extended_fields_overwrite_existing_values(
@@ -831,6 +843,7 @@ async def test_update_todo_item_extended_fields_overwrite_existing_values(
         TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
         | TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
         | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
+        | TodoListEntityFeature.SET_PRIORITY_ON_ITEM
     )
     await create_mock_platform(hass, [test_entity])
 
@@ -1126,7 +1139,7 @@ async def test_sort_todo_items_by_date_service(
     test_entity: TodoListEntity,
     hass_ws_client: WebSocketGenerator,
 ) -> None:
-    """Test sorting items by due date in a To-do list."""
+    """Test that the service for sorting items by due date in a To-do list is working correctly."""
 
     await create_mock_platform(hass, [test_entity])
 
@@ -1250,7 +1263,7 @@ async def test_sort_todo_items_by_priority_service(
     test_entity: TodoListEntity,
     hass_ws_client: WebSocketGenerator,
 ) -> None:
-    """Test sorting items by priority in a To-do list."""
+    """Test that the service for sorting items by priority in a To-do list works correctly."""
 
     await create_mock_platform(hass, [test_entity])
 
@@ -1650,6 +1663,7 @@ async def test_subscribe_entity_does_not_exist(
             {"due": f"2023-11-17T17:00:00{TEST_OFFSET}"},
         ),
         ({"description": "Some description"}, {"description": "Some description"}),
+        ({"priority": TodoPriority.LOW}, {"priority": "low"}),
     ],
 )
 async def test_list_todo_items_extended_fields(

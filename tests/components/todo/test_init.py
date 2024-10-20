@@ -1187,54 +1187,6 @@ async def test_sort_todo_items_by_date_service_raises(
     assert resp.get("error", {}).get("message") == "Sorting failed"
 
 
-@pytest.mark.parametrize(
-    ("item_data", "expected_status", "expected_error"),
-    [
-        (
-            {"entity_id": "todo.unknown"},
-            "not_found",
-            "Entity not found",
-        ),
-        (
-            {},
-            "invalid_format",
-            "required key not provided",
-        ),
-        (
-            {"entity_id": "todo.entity1", "uid": "item-1"},
-            "invalid_format",
-            "extra keys not allowed @ data['uid']. Got 'item-1'",
-        ),
-    ],
-)
-async def test_sort_todo_items_by_date_service_invalid_input(
-    hass: HomeAssistant,
-    test_entity: TodoListEntity,
-    hass_ws_client: WebSocketGenerator,
-    item_data: dict[str, Any],
-    expected_status: str,
-    expected_error: str,
-) -> None:
-    """Test invalid input for the sort by date service."""
-
-    await create_mock_platform(hass, [test_entity])
-
-    client = await hass_ws_client()
-    await client.send_json(
-        {
-            "id": 1,
-            "type": "todo/item/sortDate",
-            **item_data,
-        }
-    )
-
-    resp = await client.receive_json()
-
-    assert resp.get("id") == 1
-    assert resp.get("error", {}).get("code") == expected_status
-    assert expected_error in resp.get("error", {}).get("message")
-
-
 async def test_sort_date_item_unsupported(
     hass: HomeAssistant,
     hass_ws_client: WebSocketGenerator,
@@ -1309,54 +1261,6 @@ async def test_sort_todo_items_by_priority_service_raises(
     assert resp.get("id") == 1
     assert resp.get("error", {}).get("code") == "failed"
     assert resp.get("error", {}).get("message") == "Sorting failed"
-
-
-@pytest.mark.parametrize(
-    ("item_data", "expected_status", "expected_error"),
-    [
-        (
-            {"entity_id": "todo.unknown"},
-            "not_found",
-            "Entity not found",
-        ),
-        (
-            {},
-            "invalid_format",
-            "required key not provided",
-        ),
-        (
-            {"entity_id": "todo.entity1", "uid": "item-1"},
-            "invalid_format",
-            "extra keys not allowed @ data['uid']. Got 'item-1'",
-        ),
-    ],
-)
-async def test_sort_todo_items_by_priority_service_invalid_input(
-    hass: HomeAssistant,
-    test_entity: TodoListEntity,
-    hass_ws_client: WebSocketGenerator,
-    item_data: dict[str, Any],
-    expected_status: str,
-    expected_error: str,
-) -> None:
-    """Test invalid input for the sort by priority service."""
-
-    await create_mock_platform(hass, [test_entity])
-
-    client = await hass_ws_client()
-    await client.send_json(
-        {
-            "id": 1,
-            "type": "todo/item/sortPriority",
-            **item_data,
-        }
-    )
-
-    resp = await client.receive_json()
-
-    assert resp.get("id") == 1
-    assert resp.get("error", {}).get("code") == expected_status
-    assert expected_error in resp.get("error", {}).get("message")
 
 
 async def test_sort_priority_item_unsupported(

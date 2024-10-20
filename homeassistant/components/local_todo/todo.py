@@ -8,12 +8,14 @@ from ical.calendar import Calendar
 from ical.calendar_stream import IcsCalendarStream
 from ical.store import TodoStore
 from ical.todo import Todo, TodoStatus
+from ical.types.priority import Priority
 
 from homeassistant.components.todo import (
     TodoItem,
     TodoItemStatus,
     TodoListEntity,
     TodoListEntityFeature,
+    TodoPriority,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -90,6 +92,26 @@ async def async_setup_entry(
         await entity.async_save()
 
 
+def convert_to_ical_priority(priority: TodoPriority) -> Priority:
+    """Convert a low/medium/high priority to the priority type used by the ical-Todo."""
+    prio_mapping = {TodoPriority.LOW: 9, TodoPriority.MEDIUM: 5, TodoPriority.HIGH: 1}
+    return Priority(prio_mapping[priority])
+
+
+def convert_to_todo_priority(priority: Priority | None) -> TodoPriority | None:
+    """Convert a priority with type used by the ical-Todo to low/medium/high priority."""
+    if priority is None:
+        return None
+    to_do_priority = None
+    if 0 < priority < 5:
+        to_do_priority = TodoPriority.HIGH
+    elif priority == 5:
+        to_do_priority = TodoPriority.MEDIUM
+    elif 5 < priority < 10:
+        to_do_priority = TodoPriority.LOW
+    return to_do_priority
+
+
 def _convert_item(item: TodoItem) -> Todo:
     """Convert a HomeAssistant TodoItem to an ical Todo."""
     todo = Todo()
@@ -103,6 +125,9 @@ def _convert_item(item: TodoItem) -> Todo:
     if todo.due and not isinstance(todo.due, datetime.datetime):
         todo.due += datetime.timedelta(days=1)
     todo.description = item.description
+    if item.priority:
+        todo.priority = convert_to_ical_priority(item.priority)
+
     return todo
 
 
@@ -118,6 +143,9 @@ class LocalTodoListEntity(TodoListEntity):
         | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
         | TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
         | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
+        | TodoListEntityFeature.SORT_BY_DATE_ITEM
+        | TodoListEntityFeature.SORT_BY_PRIORITY_ITEM
+        | TodoListEntityFeature.SET_PRIORITY_ON_ITEM
     )
     _attr_should_poll = False
 
@@ -137,6 +165,7 @@ class LocalTodoListEntity(TodoListEntity):
     def _new_todo_store(self) -> TodoStore:
         return TodoStore(self._calendar, tzinfo=dt_util.get_default_time_zone())
 
+    # is called when deleting, adding and updating todos
     async def async_update(self) -> None:
         """Update entity state based on the local To-do items."""
         todo_items = []
@@ -153,6 +182,7 @@ class LocalTodoListEntity(TodoListEntity):
                     ),
                     due=due,
                     description=item.description,
+                    priority=convert_to_todo_priority(item.priority),
                 )
             )
         self._attr_todo_items = todo_items
@@ -208,3 +238,36 @@ class LocalTodoListEntity(TodoListEntity):
         """Persist the todo list to disk."""
         content = IcsCalendarStream.calendar_to_ics(self._calendar)
         await self._store.async_store(content)
+
+    async def async_sort_date(self) -> None:
+        """Sort the todo list by due date."""
+        todos = self._calendar.todos
+
+        def process_due_date(
+            due: datetime.datetime | datetime.date | None,
+        ) -> datetime.datetime:
+            """Process the due date."""
+            if due is None:
+                return datetime.datetime.min
+            if isinstance(due, datetime.datetime):
+                return due
+            return datetime.datetime.combine(due, datetime.datetime.min.time()).replace(
+                tzinfo=dt_util.get_default_time_zone()
+            )
+
+        todos.sort(key=lambda todo: (todo.due is None, process_due_date(todo.due)))
+
+        await self.async_save()
+        await self.async_update_ha_state(force_refresh=True)
+
+    async def async_sort_priority(self) -> None:
+        """Sort the todo list by priority."""
+        todos = self._calendar.todos
+        todos.sort(
+            key=lambda todo: (
+                todo.priority is None,
+                todo.priority if todo.priority else None,
+            )
+        )
+        await self.async_save()
+        await self.async_update_ha_state(force_refresh=True)

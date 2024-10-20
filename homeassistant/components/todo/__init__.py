@@ -34,11 +34,13 @@ from .const import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
+    ATTR_PRIORITY,
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN,
     TodoItemStatus,
     TodoListEntityFeature,
+    TodoPriority,
     TodoServices,
 )
 
@@ -48,6 +50,8 @@ ENTITY_ID_FORMAT = DOMAIN + ".{}"
 PLATFORM_SCHEMA = cv.PLATFORM_SCHEMA
 PLATFORM_SCHEMA_BASE = cv.PLATFORM_SCHEMA_BASE
 SCAN_INTERVAL = datetime.timedelta(seconds=60)
+
+ENT_NOT_FOUND = "Entity not found"
 
 
 @dataclasses.dataclass
@@ -86,6 +90,12 @@ TODO_ITEM_FIELDS = [
         todo_item_field=ATTR_DESCRIPTION,
         required_feature=TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM,
     ),
+    TodoItemFieldDescription(
+        service_field=ATTR_PRIORITY,
+        validation=vol.Any(cv.string, None),
+        todo_item_field=ATTR_PRIORITY,
+        required_feature=TodoListEntityFeature.SET_PRIORITY_ON_ITEM,
+    ),
 ]
 
 TODO_ITEM_FIELD_SCHEMA = {
@@ -120,6 +130,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, websocket_handle_subscribe_todo_items)
     websocket_api.async_register_command(hass, websocket_handle_todo_item_list)
     websocket_api.async_register_command(hass, websocket_handle_todo_item_move)
+    websocket_api.async_register_command(hass, websocket_handle_todo_item_sort_date)
+    websocket_api.async_register_command(hass, websocket_handle_todo_item_sort_priority)
 
     component.async_register_entity_service(
         TodoServices.ADD_ITEM,
@@ -231,6 +243,9 @@ class TodoItem:
     the entity.
     """
 
+    priority: TodoPriority | None = None
+    """A priority for the To-do item."""
+
 
 CACHED_PROPERTIES_WITH_ATTR_ = {
     "todo_items",
@@ -266,6 +281,14 @@ class TodoListEntity(Entity, cached_properties=CACHED_PROPERTIES_WITH_ATTR_):
 
     async def async_delete_todo_items(self, uids: list[str]) -> None:
         """Delete an item in the To-do list."""
+        raise NotImplementedError
+
+    async def async_sort_date(self) -> None:
+        """Sort the To-do list by date."""
+        raise NotImplementedError
+
+    async def async_sort_priority(self) -> None:
+        """Sort the To-do list by date."""
         raise NotImplementedError
 
     async def async_move_todo_item(
@@ -425,7 +448,7 @@ async def websocket_handle_todo_item_move(
     """Handle move of a To-do item within a To-do list."""
     component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
     if not (entity := component.get_entity(msg["entity_id"])):
-        connection.send_error(msg["id"], ERR_NOT_FOUND, "Entity not found")
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
         return
 
     if (
@@ -450,6 +473,78 @@ async def websocket_handle_todo_item_move(
         connection.send_result(msg["id"])
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "todo/item/sortDate",
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+@websocket_api.async_response
+async def websocket_handle_todo_item_sort_date(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Handle move of a To-do item within a To-do list."""
+    component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
+    if not (entity := component.get_entity(msg["entity_id"])):
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
+        return
+
+    if (
+        not entity.supported_features
+        or not entity.supported_features & TodoListEntityFeature.SORT_BY_DATE_ITEM
+    ):
+        connection.send_message(
+            websocket_api.error_message(
+                msg["id"],
+                ERR_NOT_SUPPORTED,
+                "To-do list does not support To-do item reordering by date",
+            )
+        )
+        return
+    try:
+        await entity.async_sort_date()
+    except HomeAssistantError as ex:
+        connection.send_error(msg["id"], "failed", str(ex))
+    else:
+        connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "todo/item/sortPriority",
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+@websocket_api.async_response
+async def websocket_handle_todo_item_sort_priority(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Handle move of a To-do item within a To-do list."""
+    component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
+    if not (entity := component.get_entity(msg["entity_id"])):
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
+        return
+
+    if (
+        not entity.supported_features
+        or not entity.supported_features & TodoListEntityFeature.SORT_BY_PRIORITY_ITEM
+    ):
+        connection.send_message(
+            websocket_api.error_message(
+                msg["id"],
+                ERR_NOT_SUPPORTED,
+                "To-do list does not support To-do item reordering by priority",
+            )
+        )
+        return
+    try:
+        await entity.async_sort_priority()
+    except HomeAssistantError as ex:
+        connection.send_error(msg["id"], "failed", str(ex))
+    else:
+        connection.send_result(msg["id"])
+
+
 def _find_by_uid_or_summary(
     value: str, items: list[TodoItem] | None
 ) -> TodoItem | None:
@@ -460,6 +555,7 @@ def _find_by_uid_or_summary(
     return None
 
 
+# First entry point!
 async def _async_add_todo_item(entity: TodoListEntity, call: ServiceCall) -> None:
     """Add an item to the To-do list."""
     _validate_supported_features(entity.supported_features, call.data)

@@ -12,9 +12,11 @@ from homeassistant.components.todo import (
     ATTR_DUE_DATE,
     ATTR_DUE_DATETIME,
     ATTR_ITEM,
+    ATTR_PRIORITY,
     ATTR_RENAME,
     ATTR_STATUS,
     DOMAIN as TODO_DOMAIN,
+    TodoPriority,
     TodoServices,
 )
 from homeassistant.const import ATTR_ENTITY_ID
@@ -92,6 +94,10 @@ EXPECTED_ADD_ITEM = {
             {**EXPECTED_ADD_ITEM, "due": "2023-11-17T05:30:00-06:00"},
         ),
         (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_ADD_ITEM, "priority": TodoPriority.HIGH},
+        ),
+        (
             {ATTR_DESCRIPTION: "Additional detail"},
             {**EXPECTED_ADD_ITEM, "description": "Additional detail"},
         ),
@@ -141,6 +147,10 @@ async def test_add_item(
         (
             {"due_datetime": "2023-11-17T11:30:00+00:00"},
             {"due": "2023-11-17T05:30:00-06:00"},
+        ),
+        (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_ADD_ITEM, "priority": TodoPriority.HIGH},
         ),
         ({ATTR_DESCRIPTION: "Additional detail"}, {"description": "Additional detail"}),
     ],
@@ -257,6 +267,11 @@ EXPECTED_UPDATE_ITEM = {
             {**EXPECTED_UPDATE_ITEM, "description": "Additional detail"},
             "1",
         ),
+        (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_UPDATE_ITEM, "priority": TodoPriority.HIGH},
+            "1",
+        ),
     ],
 )
 async def test_update_item(
@@ -370,7 +385,30 @@ async def test_update_item(
         ),
         (
             {ATTR_DESCRIPTION: None},
-            {"summary": "soda", "status": "needs_action", "due": "2024-01-01"},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "due": "2024-01-01",
+            },
+        ),
+        (
+            {ATTR_PRIORITY: "high"},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "description": "Additional detail",
+                "due": "2024-01-01",
+                "priority": "high",
+            },
+        ),
+        (
+            {ATTR_PRIORITY: None},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "description": "Additional detail",
+                "due": "2024-01-01",
+            },
         ),
     ],
     ids=[
@@ -381,6 +419,8 @@ async def test_update_item(
         "clear_due_datetime",
         "description",
         "clear_description",
+        "update_priority_high",
+        "clear_priority",
     ],
 )
 async def test_update_existing_field(
@@ -392,7 +432,6 @@ async def test_update_existing_field(
 ) -> None:
     """Test updating a todo item."""
 
-    # Create new item
     await hass.services.async_call(
         TODO_DOMAIN,
         TodoServices.ADD_ITEM,
@@ -412,6 +451,7 @@ async def test_update_existing_field(
     item = items[0]
     assert item["summary"] == "soda"
     assert item["status"] == "needs_action"
+    assert "priority" not in item
 
     # Perform update
     await hass.services.async_call(
@@ -429,6 +469,10 @@ async def test_update_existing_field(
     assert item["summary"] == "soda"
     assert "uid" in item
     del item["uid"]
+
+    # Check priority field presence
+    if "priority" not in expected_item_data:
+        assert "priority" not in item
     assert item == expected_item_data
 
 
@@ -621,6 +665,7 @@ async def test_move_item_previous_unknown(
                     SEQUENCE:1
                     STATUS:COMPLETED
                     SUMMARY:Complete Task
+                    PRIORITY: 5
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -641,6 +686,7 @@ async def test_move_item_previous_unknown(
                     SEQUENCE:1
                     STATUS:NEEDS-ACTION
                     SUMMARY:Incomplete Task
+                    PRIORITY: 9
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -662,6 +708,7 @@ async def test_move_item_previous_unknown(
                     STATUS:NEEDS-ACTION
                     SUMMARY:Task
                     DUE:20231023
+                    PRIORITY: 9
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -683,6 +730,7 @@ async def test_move_item_previous_unknown(
                     STATUS:NEEDS-ACTION
                     SUMMARY:Task
                     DUE:20231024
+                    PRIORITY: 1
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -705,6 +753,7 @@ async def test_move_item_previous_unknown(
                     SUMMARY:Task
                     DUE:20231024T113000
                     DTSTART;TZID=CST:20231024T113000
+                    PRIORITY: 5
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -799,3 +848,153 @@ async def test_susbcribe(
     assert items[0]["summary"] == "milk"
     assert items[0]["status"] == "needs_action"
     assert "uid" in items[0]
+
+
+@pytest.mark.parametrize(
+    ("todos", "expected_order"),
+    [
+        (
+            [
+                {"summary": "Task A", "due": "2024-01-01"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2023-05-24"},
+            ],
+            ["Task C", "Task A", "Task B"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": "2023-01-01"},
+                {"summary": "Task D", "due": None},
+                {"summary": "Task E", "due": "2024-05-24"},
+            ],
+            ["Task C", "Task E", "Task A", "Task B", "Task D"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": None},
+                {"summary": "Task B", "due": None},
+                {"summary": "Task C", "due": None},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+        (
+            [
+                {"summary": "Task A", "due": "2024-10-17"},
+                {"summary": "Task B", "due": "2024-10-17"},
+                {"summary": "Task C", "due": "2024-10-17"},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+    ],
+)
+async def test_sort_date(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    setup_integration: None,
+    ws_get_items: Callable[[], Awaitable[dict[str, str]]],
+    todos: list[dict[str, Any]],
+    expected_order: list[str],
+) -> None:
+    """Test sorting todo items by due date."""
+
+    # Add items to to-do list with due date
+    for todo in todos:
+        await hass.services.async_call(
+            TODO_DOMAIN,
+            TodoServices.ADD_ITEM,
+            {ATTR_ITEM: todo["summary"], ATTR_DUE_DATE: todo["due"]},
+            target={ATTR_ENTITY_ID: TEST_ENTITY},
+            blocking=True,
+        )
+
+    client = await hass_ws_client(hass)
+    # Send a websocket command to sort added items by due date
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortDate",
+            "entity_id": TEST_ENTITY,
+        }
+    )
+
+    # Retrieve sorted to-do items and their summaries
+    sorted_items = await ws_get_items()
+    sorted_summaries = [item["summary"] for item in sorted_items]
+
+    assert sorted_summaries == expected_order
+
+
+@pytest.mark.parametrize(
+    ("todos", "expected_order"),
+    [
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task B", "priority": TodoPriority.LOW},
+                {"summary": "Task C", "priority": TodoPriority.HIGH},
+            ],
+            ["Task C", "Task A", "Task B"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task B", "priority": None},
+                {"summary": "Task C", "priority": TodoPriority.LOW},
+                {"summary": "Task D", "priority": None},
+                {"summary": "Task E", "priority": TodoPriority.HIGH},
+            ],
+            ["Task E", "Task A", "Task C", "Task B", "Task D"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": None},
+                {"summary": "Task B", "priority": None},
+                {"summary": "Task C", "priority": None},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.HIGH},
+                {"summary": "Task B", "priority": TodoPriority.HIGH},
+                {"summary": "Task C", "priority": TodoPriority.HIGH},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+    ],
+)
+async def test_sort_priority(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    setup_integration: None,
+    ws_get_items: Callable[[], Awaitable[dict[str, str]]],
+    todos: list[dict[str, Any]],
+    expected_order: list[str],
+) -> None:
+    """Test sorting to-do items by priority."""
+
+    # Add items to to-do list with due date
+    for todo in todos:
+        await hass.services.async_call(
+            TODO_DOMAIN,
+            TodoServices.ADD_ITEM,
+            {ATTR_ITEM: todo["summary"], ATTR_PRIORITY: todo["priority"]},
+            target={ATTR_ENTITY_ID: TEST_ENTITY},
+            blocking=True,
+        )
+    client = await hass_ws_client(hass)
+    # Send a websocket command to sort added items by priority
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "todo/item/sortPriority",
+            "entity_id": TEST_ENTITY,
+        }
+    )
+
+    sorted_items = await ws_get_items()
+    sorted_summaries = [item["summary"] for item in sorted_items]
+
+    assert sorted_summaries == expected_order

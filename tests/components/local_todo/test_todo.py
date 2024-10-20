@@ -893,8 +893,26 @@ async def test_sort_date(
         (
             [
                 {"summary": "Task A", "priority": TodoPriority.MEDIUM},
-                {"summary": "Task B", "priority": TodoPriority.MEDIUM},
-                {"summary": "Task C", "priority": TodoPriority.MEDIUM},
+                {"summary": "Task B", "priority": None},
+                {"summary": "Task C", "priority": TodoPriority.LOW},
+                {"summary": "Task D", "priority": None},
+                {"summary": "Task E", "priority": TodoPriority.HIGH},
+            ],
+            ["Task E", "Task A", "Task C", "Task B", "Task D"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": None},
+                {"summary": "Task B", "priority": None},
+                {"summary": "Task C", "priority": None},
+            ],
+            ["Task A", "Task B", "Task C"],
+        ),
+        (
+            [
+                {"summary": "Task A", "priority": TodoPriority.HIGH},
+                {"summary": "Task B", "priority": TodoPriority.HIGH},
+                {"summary": "Task C", "priority": TodoPriority.HIGH},
             ],
             ["Task A", "Task B", "Task C"],
         ),

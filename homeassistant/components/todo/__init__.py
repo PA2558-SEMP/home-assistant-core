@@ -51,6 +51,8 @@ PLATFORM_SCHEMA = cv.PLATFORM_SCHEMA
 PLATFORM_SCHEMA_BASE = cv.PLATFORM_SCHEMA_BASE
 SCAN_INTERVAL = datetime.timedelta(seconds=60)
 
+ENT_NOT_FOUND = "Entity not found"
+
 
 @dataclasses.dataclass
 class TodoItemFieldDescription:
@@ -446,7 +448,7 @@ async def websocket_handle_todo_item_move(
     """Handle move of a To-do item within a To-do list."""
     component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
     if not (entity := component.get_entity(msg["entity_id"])):
-        connection.send_error(msg["id"], ERR_NOT_FOUND, "Entity not found")
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
         return
 
     if (
@@ -484,7 +486,7 @@ async def websocket_handle_todo_item_sort_date(
     """Handle move of a To-do item within a To-do list."""
     component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
     if not (entity := component.get_entity(msg["entity_id"])):
-        connection.send_error(msg["id"], ERR_NOT_FOUND, "Entity not found")
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
         return
 
     if (
@@ -495,7 +497,7 @@ async def websocket_handle_todo_item_sort_date(
             websocket_api.error_message(
                 msg["id"],
                 ERR_NOT_SUPPORTED,
-                "To-do list does not support To-do item reordering",
+                "To-do list does not support To-do item reordering by date",
             )
         )
         return
@@ -520,7 +522,7 @@ async def websocket_handle_todo_item_sort_priority(
     """Handle move of a To-do item within a To-do list."""
     component: EntityComponent[TodoListEntity] = hass.data[DOMAIN]
     if not (entity := component.get_entity(msg["entity_id"])):
-        connection.send_error(msg["id"], ERR_NOT_FOUND, "Entity not found")
+        connection.send_error(msg["id"], ERR_NOT_FOUND, ENT_NOT_FOUND)
         return
 
     if (
@@ -531,7 +533,7 @@ async def websocket_handle_todo_item_sort_priority(
             websocket_api.error_message(
                 msg["id"],
                 ERR_NOT_SUPPORTED,
-                "To-do list does not support To-do item reordering",
+                "To-do list does not support To-do item reordering by priority",
             )
         )
         return

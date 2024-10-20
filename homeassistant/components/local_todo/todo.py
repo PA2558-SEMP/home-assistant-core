@@ -241,18 +241,21 @@ class LocalTodoListEntity(TodoListEntity):
     async def async_sort_date(self) -> None:
         """Sort the todo list by due date."""
         todos = self._calendar.todos
-        todos.sort(
-            key=lambda x: (
-                x.due is None,
-                x.due
-                if isinstance(x.due, datetime.datetime)
-                else datetime.datetime.combine(
-                    x.due, datetime.datetime.min.time()
-                ).replace(tzinfo=dt_util.get_default_time_zone())
-                if x.due is not None and isinstance(x.due, datetime.date)
-                else datetime.datetime.min,
+
+        def process_due_date(
+            due: datetime.datetime | datetime.date | None,
+        ) -> datetime.datetime:
+            """Process the due date."""
+            if due is None:
+                return datetime.datetime.min
+            if isinstance(due, datetime.datetime):
+                return due
+            return datetime.datetime.combine(due, datetime.datetime.min.time()).replace(
+                tzinfo=dt_util.get_default_time_zone()
             )
-        )
+
+        todos.sort(key=lambda todo: (todo.due is None, process_due_date(todo.due)))
+
         await self.async_save()
         await self.async_update_ha_state(force_refresh=True)
 

@@ -221,7 +221,7 @@ async def test_list_todo_items(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {"supported_features": 15}
+    assert state.attributes == {"supported_features": 399}
 
     client = await hass_ws_client(hass)
     await client.send_json(
@@ -264,7 +264,7 @@ async def test_get_items_service(
     state = hass.states.get("todo.entity1")
     assert state
     assert state.state == "1"
-    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 15}
+    assert state.attributes == {ATTR_SUPPORTED_FEATURES: 399}
 
     result = await hass.services.async_call(
         DOMAIN,

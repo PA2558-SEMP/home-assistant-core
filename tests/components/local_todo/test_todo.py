@@ -94,6 +94,10 @@ EXPECTED_ADD_ITEM = {
             {**EXPECTED_ADD_ITEM, "due": "2023-11-17T05:30:00-06:00"},
         ),
         (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_ADD_ITEM, "priority": TodoPriority.HIGH},
+        ),
+        (
             {ATTR_DESCRIPTION: "Additional detail"},
             {**EXPECTED_ADD_ITEM, "description": "Additional detail"},
         ),
@@ -143,6 +147,10 @@ async def test_add_item(
         (
             {"due_datetime": "2023-11-17T11:30:00+00:00"},
             {"due": "2023-11-17T05:30:00-06:00"},
+        ),
+        (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_ADD_ITEM, "priority": TodoPriority.HIGH},
         ),
         ({ATTR_DESCRIPTION: "Additional detail"}, {"description": "Additional detail"}),
     ],
@@ -259,6 +267,11 @@ EXPECTED_UPDATE_ITEM = {
             {**EXPECTED_UPDATE_ITEM, "description": "Additional detail"},
             "1",
         ),
+        (
+            {ATTR_PRIORITY: TodoPriority.HIGH},
+            {**EXPECTED_UPDATE_ITEM, "priority": TodoPriority.HIGH},
+            "1",
+        ),
     ],
 )
 async def test_update_item(
@@ -372,7 +385,30 @@ async def test_update_item(
         ),
         (
             {ATTR_DESCRIPTION: None},
-            {"summary": "soda", "status": "needs_action", "due": "2024-01-01"},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "due": "2024-01-01",
+            },
+        ),
+        (
+            {ATTR_PRIORITY: "high"},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "description": "Additional detail",
+                "due": "2024-01-01",
+                "priority": "high",
+            },
+        ),
+        (
+            {ATTR_PRIORITY: None},
+            {
+                "summary": "soda",
+                "status": "needs_action",
+                "description": "Additional detail",
+                "due": "2024-01-01",
+            },
         ),
     ],
     ids=[
@@ -383,6 +419,8 @@ async def test_update_item(
         "clear_due_datetime",
         "description",
         "clear_description",
+        "update_priority_high",
+        "clear_priority",
     ],
 )
 async def test_update_existing_field(
@@ -394,7 +432,6 @@ async def test_update_existing_field(
 ) -> None:
     """Test updating a todo item."""
 
-    # Create new item
     await hass.services.async_call(
         TODO_DOMAIN,
         TodoServices.ADD_ITEM,
@@ -414,6 +451,7 @@ async def test_update_existing_field(
     item = items[0]
     assert item["summary"] == "soda"
     assert item["status"] == "needs_action"
+    assert "priority" not in item
 
     # Perform update
     await hass.services.async_call(
@@ -431,6 +469,10 @@ async def test_update_existing_field(
     assert item["summary"] == "soda"
     assert "uid" in item
     del item["uid"]
+
+    # Check priority field presence
+    if "priority" not in expected_item_data:
+        assert "priority" not in item
     assert item == expected_item_data
 
 
@@ -623,6 +665,7 @@ async def test_move_item_previous_unknown(
                     SEQUENCE:1
                     STATUS:COMPLETED
                     SUMMARY:Complete Task
+                    PRIORITY: 5
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -643,6 +686,7 @@ async def test_move_item_previous_unknown(
                     SEQUENCE:1
                     STATUS:NEEDS-ACTION
                     SUMMARY:Incomplete Task
+                    PRIORITY: 9
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -664,6 +708,7 @@ async def test_move_item_previous_unknown(
                     STATUS:NEEDS-ACTION
                     SUMMARY:Task
                     DUE:20231023
+                    PRIORITY: 9
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -685,6 +730,7 @@ async def test_move_item_previous_unknown(
                     STATUS:NEEDS-ACTION
                     SUMMARY:Task
                     DUE:20231024
+                    PRIORITY: 1
                     END:VTODO
                     END:VCALENDAR
                 """
@@ -707,6 +753,7 @@ async def test_move_item_previous_unknown(
                     SUMMARY:Task
                     DUE:20231024T113000
                     DTSTART;TZID=CST:20231024T113000
+                    PRIORITY: 5
                     END:VTODO
                     END:VCALENDAR
                 """

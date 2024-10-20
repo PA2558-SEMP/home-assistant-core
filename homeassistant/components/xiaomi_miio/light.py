@@ -174,39 +174,41 @@ async def async_setup_entry(
 
         _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
-        if model in MODELS_LIGHT_EYECARE:
-            light = PhilipsEyecare(host, token)
-            entity = XiaomiPhilipsEyecareLamp(name, light, config_entry, unique_id)
+        MODEL_CLASS_MAP = {
+            **{
+                model: (PhilipsEyecare, XiaomiPhilipsEyecareLamp)
+                for model in MODELS_LIGHT_EYECARE
+            },
+            **{
+                model: (Ceil, XiaomiPhilipsCeilingLamp)
+                for model in MODELS_LIGHT_CEILING
+            },
+            **{
+                model: (PhilipsMoonlight, XiaomiPhilipsMoonlightLamp)
+                for model in MODELS_LIGHT_MOON
+            },
+            **{model: (PhilipsBulb, XiaomiPhilipsBulb) for model in MODELS_LIGHT_BULB},
+            **{
+                model: (PhilipsBulb, XiaomiPhilipsGenericLight)
+                for model in MODELS_LIGHT_MONO
+            },
+        }
+
+        if model in MODEL_CLASS_MAP:
+            light_class, entity_class = MODEL_CLASS_MAP[model]
+            light = light_class(host, token)
+            entity = entity_class(name, light, config_entry, unique_id)
             entities.append(entity)
             hass.data[DATA_KEY][host] = entity
 
-            entities.append(
-                XiaomiPhilipsEyecareLampAmbientLight(
-                    name, light, config_entry, unique_id
-                )
-            )
             # The ambient light doesn't expose additional services.
             # A hass.data[DATA_KEY] entry isn't needed.
-        elif model in MODELS_LIGHT_CEILING:
-            light = Ceil(host, token)
-            entity = XiaomiPhilipsCeilingLamp(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_MOON:
-            light = PhilipsMoonlight(host, token)
-            entity = XiaomiPhilipsMoonlightLamp(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_BULB:
-            light = PhilipsBulb(host, token)
-            entity = XiaomiPhilipsBulb(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_MONO:
-            light = PhilipsBulb(host, token)
-            entity = XiaomiPhilipsGenericLight(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
+            if model in MODELS_LIGHT_EYECARE:
+                entities.append(
+                    XiaomiPhilipsEyecareLampAmbientLight(
+                        name, light, config_entry, unique_id
+                    )
+                )
         else:
             _LOGGER.error(
                 (

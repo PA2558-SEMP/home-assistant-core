@@ -6,6 +6,7 @@ from homeassistant import config_entries
 from homeassistant.components.local_calendar.const import (
     CONF_CALENDAR_NAME,
     CONF_STORAGE_KEY,
+    CONF_URL_NAME,
     DOMAIN,
 )
 from homeassistant.core import HomeAssistant
@@ -33,14 +34,35 @@ async def test_form(hass: HomeAssistant) -> None:
             },
         )
         await hass.async_block_till_done()
-
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] is None
+        result3 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_CALENDAR_NAME: "My ICS Calendar",
+                CONF_URL_NAME: "ICS url link",
+            },
+        )
+        await hass.async_block_till_done()
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert result2["title"] == "My Calendar"
     assert result2["data"] == {
         CONF_CALENDAR_NAME: "My Calendar",
         CONF_STORAGE_KEY: "my_calendar",
     }
-    assert len(mock_setup_entry.mock_calls) == 1
+
+    assert result3["type"] is FlowResultType.CREATE_ENTRY
+    assert result3["title"] == "My ICS Calendar"
+    assert result3["data"] == {
+        CONF_CALENDAR_NAME: "My ICS Calendar",
+        CONF_STORAGE_KEY: "my_ics_calendar",
+        CONF_URL_NAME: "ICS url link",
+    }
+
+    assert len(mock_setup_entry.mock_calls) == 2
 
 
 async def test_duplicate_name(

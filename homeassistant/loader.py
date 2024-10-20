@@ -5,7 +5,7 @@ documentation as possible to keep it understandable.
 """
 
 from __future__ import annotations
-
+from typing import Callable, TypeVar, Any
 import asyncio
 from collections.abc import Callable, Iterable
 from contextlib import suppress
@@ -1364,10 +1364,35 @@ async def async_get_integrations(
     results: dict[str, Integration | Exception] = {}
     needed: dict[str, asyncio.Future[None]] = {}
     in_progress: dict[str, asyncio.Future[None]] = {}
+
+    # Handle domains from cache or mark them as in-progress or needed
+    _process_domains(domains, cache, results, in_progress, needed, hass)
+
+    # Await in-progress integrations
+    if in_progress:
+        await asyncio.wait(in_progress.values())
+        _handle_in_progress(in_progress, cache, results)
+
+    # If there are no needed integrations, return the results
+    if not needed:
+        return results
+
+    # Handle custom integrations
+    custom = await async_get_custom_components(hass)
+    _handle_custom_integrations(custom, needed, results, cache)
+
+    # Now resolve the remaining integrations
+    if needed:
+        await _resolve_needed_integrations(hass, needed, results, cache)
+
+    return results
+
+def _process_domains(domains, cache, results, in_progress, needed, hass):
+    """Process each domain and categorize it."""
     for domain in domains:
         int_or_fut = cache.get(domain, UNDEFINED)
-        # Integration is never subclassed, so we can check for type
-        if type(int_or_fut) is Integration:
+
+        if isinstance(int_or_fut, Integration):
             results[domain] = int_or_fut
         elif int_or_fut is not UNDEFINED:
             in_progress[domain] = cast(asyncio.Future[None], int_or_fut)
@@ -1376,53 +1401,43 @@ async def async_get_integrations(
         else:
             needed[domain] = cache[domain] = hass.loop.create_future()
 
-    if in_progress:
-        await asyncio.wait(in_progress.values())
-        for domain in in_progress:
-            # When we have waited and it's UNDEFINED, it doesn't exist
-            # We don't cache that it doesn't exist, or else people can't fix it
-            # and then restart, because their config will never be valid.
-            if (int_or_fut := cache.get(domain, UNDEFINED)) is UNDEFINED:
-                results[domain] = IntegrationNotFound(domain)
-            else:
-                results[domain] = cast(Integration, int_or_fut)
+def _handle_in_progress(in_progress, cache, results):
+    """Handle in-progress integrations."""
+    for domain in in_progress:
+        int_or_fut = cache.get(domain, UNDEFINED)
+        if int_or_fut is UNDEFINED:
+            results[domain] = IntegrationNotFound(domain)
+        else:
+            results[domain] = cast(Integration, int_or_fut)
 
-    if not needed:
-        return results
-
-    # First we look for custom components
-    # Instead of using resolve_from_root we use the cache of custom
-    # components to find the integration.
-    custom = await async_get_custom_components(hass)
-    for domain, future in needed.items():
+def _handle_custom_integrations(custom, needed, results, cache):
+    """Process custom integrations."""
+    for domain, future in list(needed.items()):
         if integration := custom.get(domain):
             results[domain] = cache[domain] = integration
             future.set_result(None)
-
-    for domain in results:
-        if domain in needed:
             del needed[domain]
 
-    # Now the rest use resolve_from_root
-    if needed:
-        from . import components  # pylint: disable=import-outside-toplevel
+async def _resolve_needed_integrations(hass, needed, results, cache):
+    """Resolve integrations that were not found in cache or custom components."""
+    from . import components  # pylint: disable=import-outside-toplevel
 
-        integrations = await hass.async_add_executor_job(
+    integrations = await hass.async_add_executor_job(
             _resolve_integrations_from_root, hass, components, needed
         )
-        for domain, future in needed.items():
-            int_or_exc = integrations.get(domain)
-            if not int_or_exc:
+    for domain, future in needed.items():
+        int_or_exc = integrations.get(domain)
+        if not int_or_exc:
                 cache.pop(domain)
                 results[domain] = IntegrationNotFound(domain)
-            elif isinstance(int_or_exc, Exception):
+        elif isinstance(int_or_exc, Exception):
                 cache.pop(domain)
                 exc = IntegrationNotFound(domain)
                 exc.__cause__ = int_or_exc
                 results[domain] = exc
-            else:
+        else:
                 results[domain] = cache[domain] = int_or_exc
-            future.set_result(None)
+        future.set_result(None)
 
     return results
 
@@ -1597,8 +1612,9 @@ class Helpers:
         setattr(self, helper_name, wrapped)
         return wrapped
 
+_CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
-def bind_hass[_CallableT: Callable[..., Any]](func: _CallableT) -> _CallableT:
+def bind_hass(func: _CallableT) -> _CallableT:
     """Decorate function to indicate that first argument is hass.
 
     The use of this decorator is discouraged, and it should not be used

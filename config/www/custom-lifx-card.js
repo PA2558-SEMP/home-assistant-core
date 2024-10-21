@@ -3,24 +3,24 @@ class CustomLifxCard extends HTMLElement {
         if (!config.entity) {
             throw new Error('Entity not defined');
         }
-        this._config = { ...config }; // Store a shallow copy of the config for later use
-        this.loadState(); // Load state from localStorage
-        this.render(); // Initial render
+        this._config = { ...config }; 
+        this.loadState(); 
+        this.render(); 
     }
 
     set hass(hass) {
-        this._hass = hass; // Store Home Assistant object
-        this.render(); // Re-render whenever Home Assistant state changes
+        this._hass = hass; 
+        this.render(); 
     }
 
     render() {
         if (!this._config || !this._hass) {
-            return; // Exit if no config or Home Assistant state available
+            return; 
         }
-        
+
         const sunriseTime = this._hass.states['sun.sun'].attributes.next_rising;
         const sunsetTime = this._hass.states['sun.sun'].attributes.next_setting;
-        // Generate the card HTML content
+
         this.innerHTML = `
             <ha-card header="Sun Automation">
                 <div class="card-content">
@@ -128,7 +128,6 @@ class CustomLifxCard extends HTMLElement {
             </ha-card>
         `;
 
-        // Attach event listeners for sunrise time click
         this.querySelector('#sunrise-time').onclick = () => {
             const sunriseSettings = this.querySelector('#sunrise-settings');
             const sunsetSettings = this.querySelector('#sunset-settings');
@@ -136,7 +135,6 @@ class CustomLifxCard extends HTMLElement {
             sunsetSettings.classList.add('hidden'); 
         };
 
-        // Attach event listeners for sunset time click
         this.querySelector('#sunset-time').onclick = () => {
             const sunsetSettings = this.querySelector('#sunset-settings');
             const sunriseSettings = this.querySelector('#sunrise-settings');
@@ -150,7 +148,9 @@ class CustomLifxCard extends HTMLElement {
         sunriseSwitch.onchange = (e) => {
             this._config.sunriseEnabled = e.target.checked; 
             sunriseDot.classList.toggle('hidden', !e.target.checked); 
-            if (!e.target.checked) {
+            if (e.target.checked) {
+                this.checkSunriseTime();
+            } else {
                 this.resetSunriseOffset(); 
             }
             this.updateOffsets(); 
@@ -162,98 +162,117 @@ class CustomLifxCard extends HTMLElement {
         sunriseOffsetSlider.oninput = (e) => {
             const offset = parseInt(e.target.value, 10);
             this._config.sunriseOffset = offset; 
-            this.querySelector('#sunrise-offset-value').textContent = offset; // Update displayed offset value
-            
-            // Check the sunrise switch when the slider is moved
-            sunriseSwitch.checked = true; // Ensure the checkbox is checked
-            sunriseDot.classList.remove('hidden'); // Show the dot when slider is adjusted
+            this.querySelector('#sunrise-offset-value').textContent = offset; 
+            sunriseSwitch.checked = true; 
+            sunriseDot.classList.remove('hidden');
 
-            this.saveState(); // Save state to localStorage
+            this.saveState();
         };
 
         // Sunset switch
         const sunsetSwitch = this.querySelector('#sunset-switch');
         const sunsetDot = this.querySelector('#sunset-dot');
         sunsetSwitch.onchange = (e) => {
-            this._config.sunsetEnabled = e.target.checked; // Store sunset switch state safely
-            sunsetDot.classList.toggle('hidden', !e.target.checked); // Show/hide the dot based on the checkbox state
-            if (!e.target.checked) {
-                this.resetSunsetOffset(); // Reset offset if unchecked
+            this._config.sunsetEnabled = e.target.checked; 
+            sunsetDot.classList.toggle('hidden', !e.target.checked); 
+            if (e.target.checked) {
+                this.checkSunsetTime();
+            } else {
+                this.resetSunsetOffset(); 
             }
-            this.updateOffsets(); // Update the displayed offsets
-            this.saveState(); // Save state to localStorage
+            this.updateOffsets(); 
+            this.saveState(); 
         };
 
         // Sunset offset slider change
         const sunsetOffsetSlider = this.querySelector('#sunset-offset');
         sunsetOffsetSlider.oninput = (e) => {
             const offset = parseInt(e.target.value, 10);
-            this._config.sunsetOffset = offset; // Store the sunset offset safely
-            this.querySelector('#sunset-offset-value').textContent = offset; // Update displayed offset value
-            
-            // Check the sunset switch when the slider is moved
-            sunsetSwitch.checked = true; // Ensure the checkbox is checked
-            sunsetDot.classList.remove('hidden'); // Show the dot when slider is adjusted
-
-            this.saveState(); // Save state to localStorage
+            this._config.sunsetOffset = offset; 
+            this.querySelector('#sunset-offset-value').textContent = offset; 
+            sunsetSwitch.checked = true; 
+            sunsetDot.classList.remove('hidden'); 
+            this.saveState(); 
         };
-
-        // Set initial offsets and dot visibility based on config state
-        this.updateOffsets();
-        this.updateDotVisibility();
+        this.checkTimesPeriodically(); 
     }
 
-    updateOffsets() {
-        const sunriseOffsetValue = this._config.sunriseOffset || 0;
-        const sunsetOffsetValue = this._config.sunsetOffset || 0;
-
-        this.querySelector('#sunrise-offset-value').textContent = sunriseOffsetValue; // Update displayed sunrise offset
-        this.querySelector('#sunset-offset-value').textContent = sunsetOffsetValue; // Update displayed sunset offset
-    }
-
-    updateDotVisibility() {
-        // Update dot visibility based on the checkbox state
-        const sunriseDot = this.querySelector('#sunrise-dot');
-        const sunsetDot = this.querySelector('#sunset-dot');
-        sunriseDot.classList.toggle('hidden', !this._config.sunriseEnabled);
-        sunsetDot.classList.toggle('hidden', !this._config.sunsetEnabled);
-    }
-
-    resetSunriseOffset() {
-        this._config.sunriseOffset = 0; // Reset sunrise offset in the config
-        this.querySelector('#sunrise-offset').value = 0; // Reset slider
-        this.querySelector('#sunrise-offset-value').textContent = 0; // Reset displayed value
-        this.querySelector('#sunrise-switch').checked = false; // Uncheck the sunrise switch
-        this.updateDotVisibility(); // Update dot visibility
-    }
-
-    resetSunsetOffset() {
-        this._config.sunsetOffset = 0; // Reset sunset offset in the config
-        this.querySelector('#sunset-offset').value = 0; // Reset slider
-        this.querySelector('#sunset-offset-value').textContent = 0; // Reset displayed value
-        this.querySelector('#sunset-switch').checked = false; // Uncheck the sunset switch
-        this.updateDotVisibility(); // Update dot visibility
-    }
-
-    formatTime(dateTime) {
-        const date = new Date(dateTime);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Format time as HH:MM
     }
 
     loadState() {
-        const savedState = localStorage.getItem('custom-lifx-card-state');
-        if (savedState) {
-            this._config = { ...this._config, ...JSON.parse(savedState) }; // Merge saved state with current config
+        const savedConfig = localStorage.getItem('custom_lifx_card_config');
+        if (savedConfig) {
+            this._config = { ...this._config, ...JSON.parse(savedConfig) }; 
         }
     }
 
     saveState() {
-        localStorage.setItem('custom-lifx-card-state', JSON.stringify(this._config)); // Save current config to localStorage
+        localStorage.setItem('custom_lifx_card_config', JSON.stringify(this._config)); 
     }
 
-    getCardSize() {
-        return 3; 
+    updateOffsets() {
+        this.querySelector('#sunrise-offset').value = this._config.sunriseOffset || 0; 
+        this.querySelector('#sunset-offset').value = this._config.sunsetOffset || 0; 
+        this.querySelector('#sunrise-offset-value').textContent = this._config.sunriseOffset || 0; 
+        this.querySelector('#sunset-offset-value').textContent = this._config.sunsetOffset || 0; 
+    }
+
+    resetSunriseOffset() {
+        this._config.sunriseOffset = 0;
+        this.updateOffsets(); 
+    }
+
+    resetSunsetOffset() {
+        this._config.sunsetOffset = 0;
+        this.updateOffsets();
+    }
+
+    checkTimesPeriodically() {
+        setInterval(() => {
+            this.checkSunriseTime(); 
+            this.checkSunsetTime(); 
+        }, 60000); // Check every minute
+    }
+
+    checkSunriseTime() {
+        const sunriseTime = this._hass.states['sun.sun'].attributes.next_rising;
+        const currentTime = new Date();
+        const adjustedSunriseTime = new Date(sunriseTime);
+        adjustedSunriseTime.setMinutes(adjustedSunriseTime.getMinutes() + (this._config.sunriseOffset || 0)); 
+
+        if (
+            this._config.sunriseEnabled &&
+            currentTime.getHours() === adjustedSunriseTime.getHours() &&
+            currentTime.getMinutes() === adjustedSunriseTime.getMinutes()
+        ) {
+            this.triggerLightSwitch(); 
+        }
+    }
+
+    checkSunsetTime() {
+        const sunsetTime = this._hass.states['sun.sun'].attributes.next_setting;
+        const currentTime = new Date();
+        const adjustedSunsetTime = new Date(sunsetTime);
+        adjustedSunsetTime.setMinutes(adjustedSunsetTime.getMinutes() + (this._config.sunsetOffset || 0)); 
+
+        if (
+            this._config.sunsetEnabled &&
+            currentTime.getHours() === adjustedSunsetTime.getHours() &&
+            currentTime.getMinutes() === adjustedSunsetTime.getMinutes()
+        ) {
+            this.triggerLightSwitch(); 
+        }
+    }
+
+    triggerLightSwitch() {
+        this._hass.callService('input_boolean', 'turn_on', {
+            entity_id: 'input_boolean.virtual_light' 
+        });
     }
 }
 
 customElements.define('custom-lifx-card', CustomLifxCard);
+

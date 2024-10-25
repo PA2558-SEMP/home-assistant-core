@@ -53,6 +53,7 @@ from .utils import async_get_light_motion_current
 
 _LOGGER = logging.getLogger(__name__)
 OBJECT_TYPE_NONE = "none"
+MDI_CCTV="mdi:cctv"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -385,7 +386,7 @@ SENSE_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
     ProtectSensorEntityDescription(
         key="paired_camera",
         name="Paired camera",
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="camera.display_name",
         ufp_perm=PermRequired.NO_WRITE,
@@ -405,7 +406,7 @@ DOORLOCK_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
     ProtectSensorEntityDescription(
         key="paired_camera",
         name="Paired camera",
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="camera.display_name",
         ufp_perm=PermRequired.NO_WRITE,
@@ -465,7 +466,7 @@ NVR_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
         key="resolution_HD",
         name="Resolution: HD video",
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         ufp_value="storage_stats.storage_distribution.hd_usage.percentage",
@@ -475,7 +476,7 @@ NVR_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
         key="resolution_4K",
         name="Resolution: 4K video",
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         ufp_value="storage_stats.storage_distribution.uhd_usage.percentage",
@@ -485,7 +486,7 @@ NVR_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
         key="resolution_free",
         name="Resolution: free space",
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         ufp_value="storage_stats.storage_distribution.free.percentage",
@@ -577,7 +578,7 @@ LIGHT_SENSORS: tuple[ProtectSensorEntityDescription, ...] = (
     ProtectSensorEntityDescription(
         key="paired_camera",
         name="Paired camera",
-        icon="mdi:cctv",
+        icon=MDI_CCTV,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="camera.display_name",
         ufp_perm=PermRequired.NO_WRITE,

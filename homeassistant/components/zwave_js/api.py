@@ -2080,16 +2080,14 @@ async def websocket_subscribe_firmware_update_status(
             )
         )
 
-    FIRMWARE_UPDATE_PROGRESS_EVENT = "firmware update progress"
-
     if controller.own_node == node:
         msg[DATA_UNSUBSCRIBE] = unsubs = [
-            controller.on(FIRMWARE_UPDATE_PROGRESS_EVENT, forward_controller_progress),
+            controller.on("firmware update progress", forward_controller_progress),
             controller.on("firmware update finished", forward_controller_finished),
         ]
     else:
         msg[DATA_UNSUBSCRIBE] = unsubs = [
-            node.on(FIRMWARE_UPDATE_PROGRESS_EVENT, forward_node_progress),
+            node.on("firmware update progress", forward_node_progress),
             node.on("firmware update finished", forward_node_finished),
         ]
     connection.subscriptions[msg["id"]] = async_cleanup
@@ -2102,7 +2100,7 @@ async def websocket_subscribe_firmware_update_status(
             websocket_api.event_message(
                 msg[ID],
                 {
-                    "event": FIRMWARE_UPDATE_PROGRESS_EVENT,
+                    "event": "firmware update progress",
                     **_get_controller_firmware_update_progress_dict(
                         controller_progress
                     ),
@@ -2116,7 +2114,7 @@ async def websocket_subscribe_firmware_update_status(
             websocket_api.event_message(
                 msg[ID],
                 {
-                    "event": FIRMWARE_UPDATE_PROGRESS_EVENT,
+                    "event": "firmware update progress",
                     **_get_node_firmware_update_progress_dict(node_progress),
                 },
             )

@@ -63,7 +63,7 @@ async def test_render_image_service(hass: HomeAssistant) -> None:
     mock_openai_client = AsyncMock()
     mock_openai_client.images.generate = AsyncMock(
         return_value=MagicMock(
-            data=[MagicMock(model_dump=lambda exclude: {"url": "http://image.url"})]
+            data=[MagicMock(model_dump=lambda exclude: {"url": "https://image.url"})]
         )
     )
 

@@ -190,73 +190,78 @@ async def trace_action(
     stop: asyncio.Future[None],
     variables: dict[str, Any],
 ) -> AsyncGenerator[TraceElement]:
-    """Trace action execution."""
+    """Trace action execution with reduced cognitive complexity."""
+    # Initialize tracing elements
     path = trace_path_get()
     trace_element = action_trace_append(variables, path)
     trace_stack_push(trace_stack_cv, trace_element)
 
+    # Retrieve trace ID to check if breakpoints apply
     trace_id = trace_id_get()
     if trace_id:
-        key = trace_id[0]
-        run_id = trace_id[1]
+        key, run_id = trace_id
         breakpoints = hass.data[DATA_SCRIPT_BREAKPOINTS]
-        if key in breakpoints and (
-            (
-                run_id in breakpoints[key]
-                and (
-                    path in breakpoints[key][run_id]
-                    or NODE_ANY in breakpoints[key][run_id]
-                )
-            )
-            or (
-                RUN_ID_ANY in breakpoints[key]
-                and (
-                    path in breakpoints[key][RUN_ID_ANY]
-                    or NODE_ANY in breakpoints[key][RUN_ID_ANY]
-                )
-            )
-        ):
-            async_dispatcher_send_internal(
-                hass, SCRIPT_BREAKPOINT_HIT, key, run_id, path
-            )
+
+        # Check if the current state should trigger a breakpoint
+        if should_trigger_breakpoint(key, run_id, path, breakpoints):
+            async_dispatcher_send_internal(hass, SCRIPT_BREAKPOINT_HIT, key, run_id, path)
 
             done = hass.loop.create_future()
 
             @callback
-            def async_continue_stop(
-                command: Literal["continue", "stop"] | None = None,
-            ) -> None:
+            def async_continue_stop(command: Literal["continue", "stop"] | None = None) -> None:
+                """Continue or stop script execution based on the command."""
                 if command == "stop":
                     _set_result_unless_done(stop)
                 _set_result_unless_done(done)
 
+            # Connect the signals for debugging stop/continue actions
             signal = SCRIPT_DEBUG_CONTINUE_STOP.format(key, run_id)
             remove_signal1 = async_dispatcher_connect(hass, signal, async_continue_stop)
-            remove_signal2 = async_dispatcher_connect(
-                hass, SCRIPT_DEBUG_CONTINUE_ALL, async_continue_stop
-            )
+            remove_signal2 = async_dispatcher_connect(hass, SCRIPT_DEBUG_CONTINUE_ALL, async_continue_stop)
 
+            # Wait for either 'stop' or 'done' to complete
             await asyncio.wait([stop, done], return_when=asyncio.FIRST_COMPLETED)
             remove_signal1()
             remove_signal2()
 
+    # Manage execution and trace errors
     try:
         yield trace_element
     except _AbortScript as ex:
-        trace_element.set_error(ex.__cause__ or ex)
+        handle_script_exception(trace_element, ex)  # Handle abort script error
         raise
     except _ConditionFail:
-        # Clear errors which may have been set when evaluating the condition
+        # Clear any previous errors if the condition fails
         trace_element.set_error(None)
         raise
     except _StopScript:
         raise
     except Exception as ex:
-        trace_element.set_error(ex)
+        handle_script_exception(trace_element, ex)  # Handle generic exception
         raise
     finally:
         trace_stack_pop(trace_stack_cv)
 
+
+def should_trigger_breakpoint(key: str, run_id: str, path: str, breakpoints: dict) -> bool:
+    """
+    Determine if the current state should trigger a breakpoint based on key, run_id, path.
+    This simplifies the nested conditionals in `trace_action`.
+    """
+    return (
+        key in breakpoints and (
+            (run_id in breakpoints[key] and (path in breakpoints[key][run_id] or NODE_ANY in breakpoints[key][run_id]))
+            or (RUN_ID_ANY in breakpoints[key] and (path in breakpoints[key][RUN_ID_ANY] or NODE_ANY in breakpoints[key][RUN_ID_ANY]))
+        )
+    )
+
+
+def handle_script_exception(trace_element: TraceElement, ex: Exception) -> None:
+    """
+    This consolidates error handling and reduces complexity in the main function.
+    """
+    trace_element.set_error(ex.__cause__ or ex)
 
 def make_script_schema(
     schema: Mapping[Any, Any], default_script_mode: str, extra: int = vol.PREVENT_EXTRA

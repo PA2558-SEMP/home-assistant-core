@@ -12,6 +12,7 @@ import os
 import socket
 from typing import Any, cast
 
+
 from aiohttp import web
 from pyhap import util as pyhap_util
 from pyhap.characteristic import Characteristic

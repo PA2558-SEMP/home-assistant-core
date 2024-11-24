@@ -540,6 +540,9 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
         SERVICE_RELOAD,
         _handle_homekit_reload,
     )
+    
+    
+    
 
 
 class HomeKit:

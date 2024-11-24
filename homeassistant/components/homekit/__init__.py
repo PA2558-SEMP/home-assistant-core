@@ -531,6 +531,8 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
         DOMAIN,
         SERVICE_RELOAD,
         async_reload_homekit,
+        
+        
     )
 
 

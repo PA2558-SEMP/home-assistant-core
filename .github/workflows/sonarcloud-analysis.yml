@@ -1,0 +1,43 @@
+name: SonarCloud Analysis
+
+# Trigger the workflow on specific events
+on:
+  push:
+    branches:
+      - main  # Run analysis on the main branch
+  pull_request:
+    branches:
+      - main  # Run analysis on pull requests targeting the main branch
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Java (required for SonarScanner)
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+
+      # Step 3: Cache SonarCloud packages for faster builds
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+
+      # Step 4: Run SonarCloud analysis
+      - name: Run SonarCloud Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Use the secret SONAR_TOKEN
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=MohammadKiani77_home-assistant-core \
+            -Dsonar.organization=mohammadkiani77 \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}

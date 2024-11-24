@@ -538,6 +538,12 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
         ]
         await asyncio.gather(*reload_tasks)
 
+
+
+
+
+
+
     async_register_admin_service(
         hass,
         DOMAIN,

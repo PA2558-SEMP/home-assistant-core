@@ -42,8 +42,9 @@ def validate(integrations: dict[str, Integration], config: Config) -> None:
         )
 
 
-def generate(config: Config) -> None:
+def generate(integrations: dict[str, Integration], config: Config) -> None:
     """Generate application_credentials data."""
+    _ = integrations
     application_credentials_path = (
         config.root / "homeassistant/generated/application_credentials.py"
     )

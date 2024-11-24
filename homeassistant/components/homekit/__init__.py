@@ -16,6 +16,8 @@ from typing import Any, cast
 from aiohttp import web
 from pyhap import util as pyhap_util
 from pyhap.characteristic import Characteristic
+
+
 from pyhap.const import STANDALONE_AID
 from pyhap.loader import get_loader
 from pyhap.service import Service

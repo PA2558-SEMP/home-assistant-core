@@ -544,6 +544,13 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
 
 
 
+
+
+
+
+
+
+
     async_register_admin_service(
         hass,
         DOMAIN,

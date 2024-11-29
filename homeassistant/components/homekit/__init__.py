@@ -12,9 +12,12 @@ import os
 import socket
 from typing import Any, cast
 
+
 from aiohttp import web
 from pyhap import util as pyhap_util
 from pyhap.characteristic import Characteristic
+
+
 from pyhap.const import STANDALONE_AID
 from pyhap.loader import get_loader
 from pyhap.service import Service
@@ -448,16 +451,18 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
 
     async def async_handle_homekit_reset_accessory(service: ServiceCall) -> None:
         """Handle reset accessory HomeKit service call."""
+        entity_ids = cast(list[str], service.data.get("entity_id"))
         for homekit in _async_all_homekit_instances(hass):
             if homekit.status != STATUS_RUNNING:
-                _LOGGER.warning(
-                    "HomeKit is not running. Either it is waiting to be "
-                    "started or has been stopped"
-                )
+                _log_homekit_status_not_running()
                 continue
-
-            entity_ids = cast(list[str], service.data.get("entity_id"))
             await homekit.async_reset_accessories(entity_ids)
+
+    def _log_homekit_status_not_running() -> None:
+        _LOGGER.warning(
+            "HomeKit is not running. Either it is waiting to be "
+            "started or has been stopped."
+        )
 
     hass.services.async_register(
         DOMAIN,
@@ -471,24 +476,31 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
         referenced = async_extract_referenced_entity_ids(hass, service)
         dev_reg = dr.async_get(hass)
         for device_id in referenced.referenced_devices:
-            if not (dev_reg_ent := dev_reg.async_get(device_id)):
-                raise HomeAssistantError(f"No device found for device id: {device_id}")
-            macs = [
-                cval
-                for ctype, cval in dev_reg_ent.connections
-                if ctype == dr.CONNECTION_NETWORK_MAC
-            ]
-            matching_instances = [
-                homekit
-                for homekit in _async_all_homekit_instances(hass)
-                if homekit.driver and dr.format_mac(homekit.driver.state.mac) in macs
-            ]
+            matching_instances = _find_matching_instances(hass, dev_reg, device_id)
             if not matching_instances:
                 raise HomeAssistantError(
                     f"No homekit accessory found for device id: {device_id}"
                 )
             for homekit in matching_instances:
                 homekit.async_unpair()
+
+    def _find_matching_instances(
+        hass: HomeAssistant, dev_reg: dr.DeviceRegistry, device_id: str
+    ) -> list:
+        dev_reg_ent = dev_reg.async_get(device_id)
+        if not dev_reg_ent:
+            raise HomeAssistantError(f"No device found for device id: {device_id}")
+
+        macs = [
+            cval
+            for ctype, cval in dev_reg_ent.connections
+            if ctype == dr.CONNECTION_NETWORK_MAC
+        ]
+        return [
+            homekit
+            for homekit in _async_all_homekit_instances(hass)
+            if homekit.driver and dr.format_mac(homekit.driver.state.mac) in macs
+        ]
 
     hass.services.async_register(
         DOMAIN,
@@ -500,25 +512,26 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
     async def _handle_homekit_reload(service: ServiceCall) -> None:
         """Handle start HomeKit service call."""
         config = await async_integration_yaml_config(hass, DOMAIN)
-
         if not config or DOMAIN not in config:
             return
 
         current_entries = hass.config_entries.async_entries(DOMAIN)
+        await _reload_homekit_entries(hass, config, current_entries)
+
+    async def _reload_homekit_entries(
+        hass: HomeAssistant, config: dict, current_entries: list
+    ) -> None:
         entries_by_name, entries_by_port = _async_get_imported_entries_indices(
             current_entries
         )
-
         for conf in config[DOMAIN]:
             _async_update_config_entry_from_yaml(
                 hass, entries_by_name, entries_by_port, conf
             )
-
         reload_tasks = [
             create_eager_task(hass.config_entries.async_reload(entry.entry_id))
             for entry in current_entries
         ]
-
         await asyncio.gather(*reload_tasks)
 
     async_register_admin_service(

@@ -20,6 +20,10 @@ async def async_setup_entry(
     hub = PulseHub(hass, config_entry)
 
     if not await hub.async_setup():
+        
+        
+        
+        #test
         return False
 
     config_entry.runtime_data = hub

@@ -1,0 +1,80 @@
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+from homeassistant.helpers.entity_registry import RegistryEntry
+from homeassistant.helpers.device_registry import DeviceEntry
+from homeassistant.core import State
+
+@pytest.mark.asyncio
+async def test_async_configure_accessories():
+    # Mock the HomeAssistant instance
+    hass_mock = MagicMock()
+
+    # Mock entity and device registries
+    ent_reg_mock = MagicMock()
+    dev_reg_mock = MagicMock()
+
+    # Mock the filter
+    filter_mock = MagicMock()
+    filter_mock.get_filter.return_value = lambda entity_id: not entity_id.startswith("ignore.")
+    filter_mock.explicitly_included.return_value = False
+
+    # Mock the registries' async_get methods
+    with patch("homeassistant.helpers.entity_registry.async_get", return_value=ent_reg_mock), \
+         patch("homeassistant.helpers.device_registry.async_get", return_value=dev_reg_mock):
+        
+        # Mock some entities in the state
+        state_1 = State("light.living_room", "on")
+        state_2 = State("switch.kitchen", "off")
+        state_3 = State("ignore.sensor", "unavailable")
+        hass_mock.states.async_all.return_value = [state_1, state_2, state_3]
+
+        # Mock the entity registry entries
+        ent_reg_mock.async_get.side_effect = lambda entity_id: {
+            "light.living_room": RegistryEntry(entity_id="light.living_room", domain="light"),
+            "switch.kitchen": RegistryEntry(entity_id="switch.kitchen", domain="switch"),
+        }.get(entity_id, None)
+
+        # Create an instance of the class and mock necessary methods
+        class_under_test = MagicMock()
+        class_under_test.hass = hass_mock
+        class_under_test._filter = filter_mock
+        class_under_test._should_skip_entity = MagicMock(return_value=False)
+        class_under_test._handle_entity = AsyncMock()
+
+        # Run the method under test
+        result = await class_under_test.async_configure_accessories()
+
+        # Assertions
+        assert len(result) == 2  # Ensure only 2 entities passed the filter
+        assert state_1 in result
+        assert state_2 in result
+        assert state_3 not in result
+
+        # Ensure _handle_entity was called for each included entity
+        class_under_test._handle_entity.assert_any_call(
+            ent_reg_mock.async_get("light.living_room"),
+            dev_reg_mock,
+            "light.living_room",
+            {},  # Empty device lookup
+            state_1
+        )
+        class_under_test._handle_entity.assert_any_call(
+            ent_reg_mock.async_get("switch.kitchen"),
+            dev_reg_mock,
+            "switch.kitchen",
+            {},
+            state_2
+        )
+
+        # Ensure _should_skip_entity was called correctly
+        class_under_test._should_skip_entity.assert_any_call(
+            ent_reg_mock.async_get("light.living_room"), "light.living_room"
+        )
+        class_under_test._should_skip_entity.assert_any_call(
+            ent_reg_mock.async_get("switch.kitchen"), "switch.kitchen"
+        )
+
+        # Ensure the ignored entity was skipped
+        class_under_test._should_skip_entity.assert_not_called_with(
+            ent_reg_mock.async_get("ignore.sensor"), "ignore.sensor"
+        )

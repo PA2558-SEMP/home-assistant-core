@@ -1,6 +1,6 @@
 """Support for Amcrest IP camera sensors."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 from datetime import timedelta
 import logging
@@ -21,7 +21,7 @@ from .helpers import log_update_error, service_signal
 if TYPE_CHECKING:
     from . import AmcrestDevice
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(name_)
 
 SCAN_INTERVAL = timedelta(seconds=SENSOR_SCAN_INTERVAL_SECS)
 
@@ -47,7 +47,6 @@ SENSOR_KEYS: list[str] = [desc.key for desc in SENSOR_TYPES]
 
 async def async_setup_platform(
     hass: HomeAssistant,
-    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
@@ -71,7 +70,7 @@ async def async_setup_platform(
 class AmcrestSensor(SensorEntity):
     """A sensor implementation for Amcrest IP camera."""
 
-    def __init__(
+    def _init_(
         self, name: str, device: AmcrestDevice, description: SensorEntityDescription
     ) -> None:
         """Initialize a sensor for Amcrest camera."""

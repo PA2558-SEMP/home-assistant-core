@@ -1,6 +1,6 @@
 """Support for Amcrest IP cameras."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 import asyncio
 from collections.abc import Callable
@@ -43,7 +43,7 @@ from .helpers import log_update_error, service_signal
 if TYPE_CHECKING:
     from . import AmcrestDevice
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(name_)
 
 SCAN_INTERVAL = timedelta(seconds=15)
 
@@ -125,7 +125,6 @@ _BOOL_TO_STATE = {True: STATE_ON, False: STATE_OFF}
 
 async def async_setup_platform(
     hass: HomeAssistant,
-    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
@@ -154,9 +153,9 @@ class AmcrestCam(Camera):
     _attr_should_poll = True  # Cameras default to False
     _attr_supported_features = CameraEntityFeature.ON_OFF | CameraEntityFeature.STREAM
 
-    def __init__(self, name: str, device: AmcrestDevice, ffmpeg: FFmpegManager) -> None:
+    def _init_(self, name: str, device: AmcrestDevice, ffmpeg: FFmpegManager) -> None:
         """Initialize an Amcrest camera."""
-        super().__init__()
+        super()._init_()
         self._name = name
         self._api = device.api
         self._ffmpeg = ffmpeg
@@ -496,8 +495,8 @@ class AmcrestCam(Camera):
         max_tries = 3
         for tries in range(max_tries, 0, -1):
             try:
-                await getattr(self, f"_async_set_{func}")(value)
-                new_value = await getattr(self, f"_async_get_{func}")()
+                await getattr(self, f"async_set{func}")(value)
+                new_value = await getattr(self, f"async_get{func}")()
                 if new_value != value:
                     raise AmcrestCommandFailed  # noqa: TRY301
             except (AmcrestError, AmcrestCommandFailed) as error:

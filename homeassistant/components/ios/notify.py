@@ -1,6 +1,6 @@
 """Support for iOS push notifications."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 from http import HTTPStatus
 import logging
@@ -22,7 +22,7 @@ import homeassistant.util.dt as dt_util
 
 from .. import ios
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(name_)
 
 PUSH_URL = "https://ios-push.home-assistant.io/push"
 
@@ -32,8 +32,9 @@ def log_rate_limits(
 ) -> None:
     """Output rate limit log line at given level."""
     rate_limits = resp["rateLimits"]
-    resetsAt = dt_util.parse_datetime(rate_limits["resetsAt"])
-    resetsAtTime = resetsAt - dt_util.utcnow() if resetsAt is not None else "---"
+    resets_at = dt_util.parse_datetime(rate_limits["resetsAt"])  # Renamed variable
+
+    resets_at_time = resets_at - dt_util.utcnow() if resets_at is not None else "---"
     rate_limit_msg = (
         "iOS push notification rate limits for %s: "
         "%d sent, %d allowed, %d errors, "
@@ -69,7 +70,7 @@ def get_service(
 class iOSNotificationService(BaseNotificationService):
     """Implement the notification service for iOS."""
 
-    def __init__(self) -> None:
+    def _init_(self) -> None:
         """Initialize the service."""
 
     @property

@@ -1,6 +1,6 @@
 """The Lidarr component."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 from dataclasses import dataclass, fields
 
@@ -59,22 +59,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: LidarrConfigEntry) -> bo
         status=StatusDataUpdateCoordinator(hass, host_configuration, lidarr),
         wanted=WantedDataUpdateCoordinator(hass, host_configuration, lidarr),
     )
-    for field in fields(data):
-        coordinator = getattr(data, field.name)
-        await coordinator.async_config_entry_first_refresh()
-    device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
-        config_entry_id=entry.entry_id,
-        configuration_url=entry.data[CONF_URL],
-        entry_type=DeviceEntryType.SERVICE,
-        identifiers={(DOMAIN, entry.entry_id)},
-        manufacturer=DEFAULT_NAME,
-        sw_version=data.status.data,
-    )
-    entry.runtime_data = data
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    return True
+if not is_dataclass(data):
+    raise TypeError("Expected a dataclass instance, but got: " + str(type(data)))
+
+for field in fields(data):
+    coordinator = getattr(data, field.name)
+    await coordinator.async_config_entry_first_refresh()
+
+device_registry = dr.async_get(hass)
+device_registry.async_get_or_create(
+    config_entry_id=entry.entry_id,
+    configuration_url=entry.data[CONF_URL],
+    entry_type=DeviceEntryType.SERVICE,
+    identifiers={(DOMAIN, entry.entry_id)},
+    manufacturer=DEFAULT_NAME,
+    sw_version=getattr(data.status, 'data', None),
+)
+
+entry.runtime_data = data
+await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+return True
+
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LidarrConfigEntry) -> bool:
@@ -87,15 +93,15 @@ class LidarrEntity(CoordinatorEntity[LidarrDataUpdateCoordinator[T]]):
 
     _attr_has_entity_name = True
 
-    def __init__(
+    def _init_(
         self,
         coordinator: LidarrDataUpdateCoordinator[T],
         description: EntityDescription,
     ) -> None:
         """Initialize the Lidarr entity."""
-        super().__init__(coordinator)
+        super()._init_(coordinator)
         self.entity_description = description
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{description.key}"
+        self.attr_unique_id = f"{coordinator.config_entry.entry_id}{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id)}
         )

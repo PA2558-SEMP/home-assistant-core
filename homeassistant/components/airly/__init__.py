@@ -1,6 +1,6 @@
 """The Airly integration."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 from datetime import timedelta
 import logging
@@ -17,7 +17,7 @@ from .coordinator import AirlyDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR]
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(name_)
 
 type AirlyConfigEntry = ConfigEntry[AirlyDataUpdateCoordinator]
 
@@ -39,7 +39,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: AirlyConfigEntry) -> boo
     # longitude are float, so we convert old device entries to use correct types
     # We used to use a str 3-tuple here sometime, convert that to a 2-tuple too.
     device_registry = dr.async_get(hass)
-    old_ids = (DOMAIN, latitude, longitude)
     for old_ids in (
         (DOMAIN, latitude, longitude),
         (

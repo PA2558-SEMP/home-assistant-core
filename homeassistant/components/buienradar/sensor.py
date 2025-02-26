@@ -77,29 +77,32 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
         key="stationname",
         translation_key="stationname",
     ),
+# Define a constant for the icon
+GAUGE_ICON = "mdi:gauge"
+
     # new in json api (>1.0.0):
     SensorEntityDescription(
         key="barometerfc",
         translation_key="barometerfc",
-        icon="mdi:gauge",
+        icon=GAUGE_ICON,
     ),
     # new in json api (>1.0.0):
     SensorEntityDescription(
         key="barometerfcname",
         translation_key="barometerfcname",
-        icon="mdi:gauge",
+        icon=GAUGE_ICON,
     ),
     # new in json api (>1.0.0):
     SensorEntityDescription(
         key="barometerfcnamenl",
         translation_key="barometerfcnamenl",
-        icon="mdi:gauge",
+        icon=GAUGE_ICON,
     ),
     SensorEntityDescription(
         key="condition",
         translation_key="condition",
         device_class=SensorDeviceClass.ENUM,
-        options=STATE_CONDITIONS,
+        options=STATE_CONDITION_CODES,
     ),
     SensorEntityDescription(
         key="conditioncode",
@@ -154,6 +157,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+
     SensorEntityDescription(
         key="windforce",
         translation_key="windforce",
@@ -381,95 +385,118 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPrecipitationDepth.MILLIMETERS,
         device_class=SensorDeviceClass.PRECIPITATION,
     ),
-    SensorEntityDescription(
-        key="rainchance_1d",
-        translation_key="rainchance_1d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-pouring",
+# Define constant for repeated icon
+ICON_WEATHER_POURING = "mdi:weather-pouring"
+    
+SensorEntityDescription(
+    key="rainchance_1d",
+    translation_key="rainchance_1d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_POURING,
+),
+SensorEntityDescription(
+    key="rainchance_2d",
+    translation_key="rainchance_2d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_POURING,
+),
+SensorEntityDescription(
+    key="rainchance_3d",
+    translation_key="rainchance_3d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_POURING,
+),
+SensorEntityDescription(
+    key="rainchance_4d",
+    translation_key="rainchance_4d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_POURING,
+),
+SensorEntityDescription(
+    key="rainchance_5d",
+    translation_key="rainchance_5d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_POURING,
+),
+
+ICON_WEATHER_PARTLY_CLOUDY = "mdi:weather-partly-cloudy"
+
+SensorEntityDescription(
+    key="sunchance_1d",
+    translation_key="sunchance_1d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_PARTLY_CLOUDY,
+),
+SensorEntityDescription(
+    key="sunchance_2d",
+    translation_key="sunchance_2d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_PARTLY_CLOUDY,
+),
+SensorEntityDescription(
+    key="sunchance_3d",
+    translation_key="sunchance_3d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_PARTLY_CLOUDY,
+),
+SensorEntityDescription(
+    key="sunchance_4d",
+    translation_key="sunchance_4d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_PARTLY_CLOUDY,
+),
+SensorEntityDescription(
+    key="sunchance_5d",
+    translation_key="sunchance_5d",
+    native_unit_of_measurement=PERCENTAGE,
+    icon=ICON_WEATHER_PARTLY_CLOUDY,
+),
+
+ICON_WEATHER_WINDY = "mdi:weather-windy"
+SensorEntityDescription(
+        key="windforce",
+        translation_key="windforce",
+        native_unit_of_measurement="Bft",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
-        key="rainchance_2d",
-        translation_key="rainchance_2d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-pouring",
+        key="winddirection",
+        translation_key="winddirection",
+        icon=ICON_COMPASS_OUTLINE,
     ),
     SensorEntityDescription(
-        key="rainchance_3d",
-        translation_key="rainchance_3d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-pouring",
-    ),
-    SensorEntityDescription(
-        key="rainchance_4d",
-        translation_key="rainchance_4d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-pouring",
-    ),
-    SensorEntityDescription(
-        key="rainchance_5d",
-        translation_key="rainchance_5d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-pouring",
-    ),
-    SensorEntityDescription(
-        key="sunchance_1d",
-        translation_key="sunchance_1d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-partly-cloudy",
-    ),
-    SensorEntityDescription(
-        key="sunchance_2d",
-        translation_key="sunchance_2d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-partly-cloudy",
-    ),
-    SensorEntityDescription(
-        key="sunchance_3d",
-        translation_key="sunchance_3d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-partly-cloudy",
-    ),
-    SensorEntityDescription(
-        key="sunchance_4d",
-        translation_key="sunchance_4d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-partly-cloudy",
-    ),
-    SensorEntityDescription(
-        key="sunchance_5d",
-        translation_key="sunchance_5d",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:weather-partly-cloudy",
+        key="windazimuth",
+        translation_key="windazimuth",
     ),
     SensorEntityDescription(
         key="windforce_1d",
         translation_key="windforce_1d",
         native_unit_of_measurement="Bft",
-        icon="mdi:weather-windy",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
         key="windforce_2d",
         translation_key="windforce_2d",
         native_unit_of_measurement="Bft",
-        icon="mdi:weather-windy",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
         key="windforce_3d",
         translation_key="windforce_3d",
         native_unit_of_measurement="Bft",
-        icon="mdi:weather-windy",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
         key="windforce_4d",
         translation_key="windforce_4d",
         native_unit_of_measurement="Bft",
-        icon="mdi:weather-windy",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
         key="windforce_5d",
         translation_key="windforce_5d",
         native_unit_of_measurement="Bft",
-        icon="mdi:weather-windy",
+        icon=ICON_WEATHER_WINDY,
     ),
     SensorEntityDescription(
         key="windspeed_1d",
@@ -824,12 +851,14 @@ class BrSensor(SensorEntity):
             return 4
         return 0
 
+    LOG_NO_FORECAST = "No forecast for fcday=%s"
+
     def _update_weather_condition(self, data, fcday, sensor_type):
         """Update weather condition and symbol."""
         try:
             condition = data.get(FORECAST)[fcday].get(CONDITION)
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(LOG_NO_FORECAST, fcday)
             return False
 
         if condition:
@@ -861,7 +890,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(sensor_type[:-3])
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(LOG_NO_FORECAST, fcday)
             return False
 
         if self.state is not None:
@@ -873,7 +902,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(sensor_type[:-3])
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(LOG_NO_FORECAST, fcday)
             return False
         return True
 

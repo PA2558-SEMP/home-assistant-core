@@ -53,28 +53,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: LidarrConfigEntry) -> bo
         session=async_get_clientsession(hass, host_configuration.verify_ssl),
         request_timeout=60,
     )
-    data = LidarrData(
-        disk_space=DiskSpaceDataUpdateCoordinator(hass, host_configuration, lidarr),
-        queue=QueueDataUpdateCoordinator(hass, host_configuration, lidarr),
-        status=StatusDataUpdateCoordinator(hass, host_configuration, lidarr),
-        wanted=WantedDataUpdateCoordinator(hass, host_configuration, lidarr),
-    )
-    for field in fields(data):
-        coordinator = getattr(data, field.name)
-        await coordinator.async_config_entry_first_refresh()
-    device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
-        config_entry_id=entry.entry_id,
-        configuration_url=entry.data[CONF_URL],
-        entry_type=DeviceEntryType.SERVICE,
-        identifiers={(DOMAIN, entry.entry_id)},
-        manufacturer=DEFAULT_NAME,
-        sw_version=data.status.data,
-    )
-    entry.runtime_data = data
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    class LidarrData:
+    def __init__(self, disk_space, queue, status, wanted):
+        self.disk_space = disk_space
+        self.queue = queue
+        self.status = status
+        self.wanted = wanted
 
-    return True
+
+data = LidarrData(
+    disk_space=DiskSpaceDataUpdateCoordinator(hass, host_configuration, lidarr),
+    queue=QueueDataUpdateCoordinator(hass, host_configuration, lidarr),
+    status=StatusDataUpdateCoordinator(hass, host_configuration, lidarr),
+    wanted=WantedDataUpdateCoordinator(hass, host_configuration, lidarr),
+)
+
+for field_name in vars(data):
+    coordinator = getattr(data, field_name)
+    await coordinator.async_config_entry_first_refresh()
+
+device_registry = dr.async_get(hass)
+device_registry.async_get_or_create(
+    config_entry_id=entry.entry_id,
+    configuration_url=entry.data[CONF_URL],
+    entry_type=DeviceEntryType.SERVICE,
+    identifiers={(DOMAIN, entry.entry_id)},
+    manufacturer=DEFAULT_NAME,
+    sw_version=data.status.data,
+)
+
+entry.runtime_data = data
+
+await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LidarrConfigEntry) -> bool:

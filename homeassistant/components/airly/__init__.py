@@ -1,6 +1,6 @@
 """The Airly integration."""
 
-from _future_ import annotations
+from __future__ import annotations
 
 from datetime import timedelta
 import logging
@@ -17,7 +17,7 @@ from .coordinator import AirlyDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR]
 
-LOGGER = logging.getLogger(name_)
+_LOGGER = logging.getLogger(__name__)
 
 type AirlyConfigEntry = ConfigEntry[AirlyDataUpdateCoordinator]
 

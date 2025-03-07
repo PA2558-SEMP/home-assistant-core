@@ -1,6 +1,6 @@
 """Support for Amcrest IP cameras."""
 
-from _future_ import annotations
+from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
@@ -43,7 +43,7 @@ from .helpers import log_update_error, service_signal
 if TYPE_CHECKING:
     from . import AmcrestDevice
 
-LOGGER = logging.getLogger(name_)
+_LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(seconds=15)
 
@@ -153,9 +153,9 @@ class AmcrestCam(Camera):
     _attr_should_poll = True  # Cameras default to False
     _attr_supported_features = CameraEntityFeature.ON_OFF | CameraEntityFeature.STREAM
 
-    def _init_(self, name: str, device: AmcrestDevice, ffmpeg: FFmpegManager) -> None:
+    def __init__(self, name: str, device: AmcrestDevice, ffmpeg: FFmpegManager) -> None:
         """Initialize an Amcrest camera."""
-        super()._init_()
+        super().__init__()
         self._name = name
         self._api = device.api
         self._ffmpeg = ffmpeg

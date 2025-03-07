@@ -1,6 +1,6 @@
 """Support for Amcrest IP camera binary sensors."""
 
-from _future_ import annotations
+from __future__ import annotations
 
 from contextlib import suppress
 from dataclasses import dataclass
@@ -44,7 +44,7 @@ class AmcrestSensorEntityDescription(BinarySensorEntityDescription):
     should_poll: bool = False
 
 
-LOGGER = logging.getLogger(name_)
+_LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(seconds=BINARY_SENSOR_SCAN_INTERVAL_SECS)
 _ONLINE_SCAN_INTERVAL = timedelta(seconds=60 - BINARY_SENSOR_SCAN_INTERVAL_SECS)
@@ -158,7 +158,7 @@ async def async_setup_platform(
 class AmcrestBinarySensor(BinarySensorEntity):
     """Binary sensor for Amcrest camera."""
 
-    def _init_(
+    def __init__(
         self,
         name: str,
         device: AmcrestDevice,
@@ -193,7 +193,7 @@ class AmcrestBinarySensor(BinarySensorEntity):
 
         if self._api.available:
             # Send a command to the camera to test if we can still communicate with it.
-            # Override of Http.async_command() in _init_.py will set self._api.available
+            # Override of Http.async_command() in __init__.py will set self._api.available
             # accordingly.
             with suppress(AmcrestError):
                 await self._api.async_current_time

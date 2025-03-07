@@ -1,6 +1,6 @@
 """Support for Amcrest IP camera sensors."""
 
-from _future_ import annotations
+from __future__ import annotations
 
 from datetime import timedelta
 import logging
@@ -21,7 +21,7 @@ from .helpers import log_update_error, service_signal
 if TYPE_CHECKING:
     from . import AmcrestDevice
 
-LOGGER = logging.getLogger(name_)
+_LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(seconds=SENSOR_SCAN_INTERVAL_SECS)
 
@@ -70,7 +70,7 @@ async def async_setup_platform(
 class AmcrestSensor(SensorEntity):
     """A sensor implementation for Amcrest IP camera."""
 
-    def _init_(
+    def __init__(
         self, name: str, device: AmcrestDevice, description: SensorEntityDescription
     ) -> None:
         """Initialize a sensor for Amcrest camera."""

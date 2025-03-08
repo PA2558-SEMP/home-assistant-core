@@ -1,5 +1,4 @@
 """Cover platform for Advantage Air integration."""
-
 from typing import Any
 
 from homeassistant.components.cover import (
@@ -18,16 +17,13 @@ from .models import AdvantageAirData
 
 PARALLEL_UPDATES = 0
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: AdvantageAirDataConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up AdvantageAir cover platform."""
-
     instance = config_entry.runtime_data
-
     entities: list[CoverEntity] = []
     if aircons := instance.coordinator.data.get("aircons"):
         for ac_key, ac_device in aircons.items():
@@ -46,7 +42,6 @@ async def async_setup_entry(
                     AdvantageAirThingCover(instance, thing, CoverDeviceClass.GARAGE)
                 )
     async_add_entities(entities)
-
 
 class AdvantageAirZoneVent(AdvantageAirZoneEntity, CoverEntity):
     """Advantage Air Zone Vent."""
@@ -97,7 +92,6 @@ class AdvantageAirZoneVent(AdvantageAirZoneEntity, CoverEntity):
                     "value": position,
                 }
             )
-
 
 class AdvantageAirThingCover(AdvantageAirThingEntity, CoverEntity):
     """Representation of Advantage Air Cover controlled by MyPlace."""

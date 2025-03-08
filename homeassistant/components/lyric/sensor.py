@@ -1,6 +1,6 @@
 """Support for Honeywell Lyric sensor platform."""
 
-from __future__ import annotations
+from _future_ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -195,7 +195,7 @@ class LyricSensor(LyricDeviceEntity, SensorEntity):
 
     entity_description: LyricSensorEntityDescription
 
-    def __init__(
+    def _init_(
         self,
         coordinator: DataUpdateCoordinator[Lyric],
         description: LyricSensorEntityDescription,
@@ -203,7 +203,7 @@ class LyricSensor(LyricDeviceEntity, SensorEntity):
         device: LyricDevice,
     ) -> None:
         """Initialize."""
-        super().__init__(
+        super()._init_(
             coordinator,
             location,
             device,
@@ -227,23 +227,23 @@ class LyricAccessorySensor(LyricAccessoryEntity, SensorEntity):
 
     entity_description: LyricSensorAccessoryEntityDescription
 
-    def __init__(
+    def _init_(
         self,
         coordinator: DataUpdateCoordinator[Lyric],
         description: LyricSensorAccessoryEntityDescription,
         location: LyricLocation,
-        parentDevice: LyricDevice,
+        parent_device: LyricDevice,
         room: LyricRoom,
         accessory: LyricAccessory,
     ) -> None:
         """Initialize."""
-        super().__init__(
+        super()._init_(
             coordinator,
             location,
             parentDevice,
             room,
             accessory,
-            f"{parentDevice.mac_id}_room{room.id}_acc{accessory.id}_{description.key}",
+            f"{parentDevice.mac_id}room{room.id}_acc{accessory.id}{description.key}",
         )
         self.entity_description = description
         if description.device_class == SensorDeviceClass.TEMPERATURE:
@@ -255,4 +255,4 @@ class LyricAccessorySensor(LyricAccessoryEntity, SensorEntity):
     @property
     def native_value(self) -> StateType | datetime:
         """Return the state."""
-        return self.entity_description.value_fn(self.room, self.accessory)
+        return self.entity_description.value_fn(self.room, self.accessory)

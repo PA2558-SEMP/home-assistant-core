@@ -144,7 +144,6 @@ class AsusWrtFlowHandler(ConfigFlow, domain=DOMAIN):
 
         user_input = self._config_data
 
-        add_schema: VolDictType
         if self.show_advanced_options:
             add_schema = {
                 vol.Exclusive(CONF_PASSWORD, PASS_KEY, PASS_KEY_MSG): str,
@@ -205,14 +204,14 @@ class AsusWrtFlowHandler(ConfigFlow, domain=DOMAIN):
             )
             error = RESULT_UNKNOWN
 
-        if error is None:
-            if not api.is_connected:
-                _LOGGER.error(
-                    "Error connecting to the AsusWrt router at %s using protocol %s",
-                    host,
-                    protocol,
-                )
-                error = RESULT_CONN_ERROR
+        # *** Change applied here: merged the nested if into one ***
+        if error is None and not api.is_connected:
+            _LOGGER.error(
+                "Error connecting to the AsusWrt router at %s using protocol %s",
+                host,
+                protocol,
+            )
+            error = RESULT_CONN_ERROR
 
         if error is not None:
             return error, None
@@ -265,8 +264,8 @@ class AsusWrtFlowHandler(ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="invalid_unique_id")
             else:
                 _LOGGER.warning(
-                    "This device does not provide a valid Unique ID."
-                    " Configuration of multiple instance will not be possible"
+                    "This device does not provide a valid Unique ID. "
+                    "Configuration of multiple instance will not be possible"
                 )
 
             if protocol in [PROTOCOL_SSH, PROTOCOL_TELNET]:

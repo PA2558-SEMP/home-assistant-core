@@ -125,7 +125,6 @@ _BOOL_TO_STATE = {True: STATE_ON, False: STATE_OFF}
 
 async def async_setup_platform(
     hass: HomeAssistant,
-    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
@@ -496,8 +495,8 @@ class AmcrestCam(Camera):
         max_tries = 3
         for tries in range(max_tries, 0, -1):
             try:
-                await getattr(self, f"_async_set_{func}")(value)
-                new_value = await getattr(self, f"_async_get_{func}")()
+                await getattr(self, f"async_set{func}")(value)
+                new_value = await getattr(self, f"async_get{func}")()
                 if new_value != value:
                     raise AmcrestCommandFailed  # noqa: TRY301
             except (AmcrestError, AmcrestCommandFailed) as error:

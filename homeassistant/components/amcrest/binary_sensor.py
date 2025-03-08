@@ -135,7 +135,6 @@ def check_binary_sensors(value: list[str]) -> list[str]:
 
 async def async_setup_platform(
     hass: HomeAssistant,
-    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:

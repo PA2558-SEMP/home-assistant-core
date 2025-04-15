@@ -1,3 +1,5 @@
+from typing import Optional
+
 """Classes to help gather user submissions."""
 
 from __future__ import annotations
@@ -635,7 +637,7 @@ class FlowHandler(Generic[_FlowResultT, _HandlerT]):
 
     # While not purely typed, it makes typehinting more useful for us
     # and removes the need for constant None checks or asserts.
-    flow_id: str = None  # type: ignore[assignment]
+    flow_id: Optional[str] = None  # type: ignore[assignment]
     hass: HomeAssistant = None  # type: ignore[assignment]
     handler: _HandlerT = None  # type: ignore[assignment]
     # Ensure the attribute has a subscriptable, but immutable, default value.

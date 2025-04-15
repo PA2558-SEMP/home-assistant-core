@@ -239,7 +239,7 @@ class OperationNotAllowed(ConfigError):
     """Raised when a config entry operation is not allowed."""
 
 
-type UpdateListenerType = Callable[
+UpdateListenerType = Callable[
     [HomeAssistant, ConfigEntry], Coroutine[Any, Any, None]
 ]
 
@@ -771,72 +771,96 @@ class ConfigEntry(Generic[_DataT]):
         Returns if unload is possible and was successful.
         """
         if self.source == SOURCE_IGNORE:
+            return self._handle_ignore(hass)
+            
+
+        if self.state == ConfigEntryState.NOT_LOADED:
+            return True
+
+        integration = await self._get_integration(hass, integration)
+        if integration is None:
+            return True
+
+        component = await integration.async_get_component()
+
+        if not self._validate_setup_lock() or not self._can_recover():
+            return False
+
+        if not self._prepare_for_unload(component):
+            return False
+
+        return await self._perform_unload(hass, component, integration)
+    
+    def _should_ignore_unload(self, hass: HomeAssistant) -> bool:
+        """Check if unload should be ignored based on the source and state."""
+        if self.source == SOURCE_IGNORE:
             self._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
             return True
 
         if self.state == ConfigEntryState.NOT_LOADED:
             return True
 
+        return False
+
+    async def _get_integration(self, hass: HomeAssistant, integration: loader.Integration | None) -> loader.Integration | None:
+        """Get integration for domain or set state if integration is not found."""
         if not integration and (integration := self._integration_for_domain) is None:
             try:
                 integration = await loader.async_get_integration(hass, self.domain)
             except loader.IntegrationNotFound:
-                # The integration was likely a custom_component
-                # that was uninstalled, or an integration
-                # that has been renamed without removing the config
-                # entry.
                 self._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
-                return True
-
-        component = await integration.async_get_component()
-
-        if domain_is_integration := self.domain == integration.domain:
-            if not self.setup_lock.locked():
-                raise OperationNotAllowed(
-                    f"The config entry {self.title} ({self.domain}) with entry_id"
-                    f" {self.entry_id} cannot be unloaded because it does not hold "
-                    "the setup lock"
-                )
-
-            if not self.state.recoverable:
-                return False
-
-            if self.state is not ConfigEntryState.LOADED:
-                self.async_cancel_retry_setup()
-                self._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
-                return True
-
+            return None
+        return integration
+    
+    def _validate_setup_lock(self) -> bool:
+        """Validate if the setup lock is held by the current entry."""
+        if not self.setup_lock.locked():
+            raise OperationNotAllowed(
+                f"The config entry {self.title} ({self.domain}) with entry_id "
+                f"{self.entry_id} cannot be unloaded because it does not hold "
+                "the setup lock"
+            )
+        return True
+    
+    def _can_recover(self) -> bool:
+        """Check if the state is recoverable."""
+        if not self.state.recoverable:
+            return False
+        return True
+    
+    def _prepare_for_unload(self, component) -> bool:
+        """Prepare for unloading the component."""
         supports_unload = hasattr(component, "async_unload_entry")
-
         if not supports_unload:
-            if domain_is_integration:
+            if self.domain == component.domain:
                 self._async_set_state(
                     hass, ConfigEntryState.FAILED_UNLOAD, "Unload not supported"
                 )
             return False
-
+        return True
+    
+    async def _perform_unload(self, hass: HomeAssistant, component, integration) -> bool:
+        """Perform the actual unloading of the component."""
         try:
             result = await component.async_unload_entry(hass, self)
-
             assert isinstance(result, bool)
 
-            # Only adjust state if we unloaded the component
-            if domain_is_integration and result:
+            if self.domain == integration.domain and result:
                 await self._async_process_on_unload(hass)
                 if hasattr(self, "runtime_data"):
                     object.__delattr__(self, "runtime_data")
-
                 self._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
 
         except Exception as exc:
             _LOGGER.exception(
                 "Error unloading entry %s for %s", self.title, integration.domain
             )
-            if domain_is_integration:
+            if self.domain == integration.domain:
                 self._async_set_state(
                     hass, ConfigEntryState.FAILED_UNLOAD, str(exc) or "Unknown error"
                 )
             return False
+
         return result
 
     async def async_remove(self, hass: HomeAssistant) -> None:

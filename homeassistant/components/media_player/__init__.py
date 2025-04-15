@@ -82,6 +82,7 @@ from .const import (  # noqa: F401
     ATTR_MEDIA_PLAYLIST,
     ATTR_MEDIA_POSITION,
     ATTR_MEDIA_POSITION_UPDATED_AT,
+    ATTR_MEDIA_QUEUE,
     ATTR_MEDIA_REPEAT,
     ATTR_MEDIA_SEASON,
     ATTR_MEDIA_SEEK_POSITION,
@@ -204,6 +205,7 @@ ATTR_TO_PROPERTY = [
     ATTR_MEDIA_EPISODE,
     ATTR_MEDIA_CHANNEL,
     ATTR_MEDIA_PLAYLIST,
+    ATTR_MEDIA_QUEUE,
     ATTR_APP_ID,
     ATTR_APP_NAME,
     ATTR_INPUT_SOURCE,
@@ -455,6 +457,26 @@ class MediaPlayerEntityDescription(EntityDescription, frozen_or_thawed=True):
     volume_step: float | None = None
 
 
+class MediaPlayerQueueItemCreator(TypedDict):
+    """A creator in the media player queue creators list."""
+
+    name: str | None
+    id: str | None
+    creator_type: str | None
+
+
+class MediaPlayerQueueItem(TypedDict):
+    """A single item in the media player queue."""
+
+    media_title: str | None
+    media_type: str | None
+    media_id: str | None
+    image: str | None
+    href: str | None
+    duration_ms: int | None
+    media_creators: list[MediaPlayerQueueItemCreator] | None
+
+
 CACHED_PROPERTIES_WITH_ATTR_ = {
     "device_class",
     "state",
@@ -478,6 +500,7 @@ CACHED_PROPERTIES_WITH_ATTR_ = {
     "media_episode",
     "media_channel",
     "media_playlist",
+    "media_queue",
     "app_id",
     "app_name",
     "source",
@@ -518,6 +541,7 @@ class MediaPlayerEntity(Entity, cached_properties=CACHED_PROPERTIES_WITH_ATTR_):
     _attr_app_name: str | None = None
     _attr_device_class: MediaPlayerDeviceClass | None
     _attr_group_members: list[str] | None = None
+    _attr_media_queue: list[MediaPlayerQueueItem] | None = None
     _attr_is_volume_muted: bool | None = None
     _attr_media_album_artist: str | None = None
     _attr_media_album_name: str | None = None
@@ -591,6 +615,11 @@ class MediaPlayerEntity(Entity, cached_properties=CACHED_PROPERTIES_WITH_ATTR_):
     def is_volume_muted(self) -> bool | None:
         """Boolean if volume is currently muted."""
         return self._attr_is_volume_muted
+
+    @cached_property
+    def media_queue(self) -> list[MediaPlayerQueueItem] | None:
+        """List of media items in the queue."""
+        return self._attr_media_queue
 
     @cached_property
     def media_content_id(self) -> str | None:

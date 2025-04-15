@@ -23,6 +23,7 @@ ATTR_MEDIA_ENQUEUE = "enqueue"
 ATTR_MEDIA_EXTRA = "extra"
 ATTR_MEDIA_EPISODE = "media_episode"
 ATTR_MEDIA_PLAYLIST = "media_playlist"
+ATTR_MEDIA_QUEUE = "media_queue"
 ATTR_MEDIA_POSITION = "media_position"
 ATTR_MEDIA_POSITION_UPDATED_AT = "media_position_updated_at"
 ATTR_MEDIA_REPEAT = "repeat"
@@ -200,6 +201,8 @@ class MediaPlayerEntityFeature(IntFlag):
     GROUPING = 524288
     MEDIA_ANNOUNCE = 1048576
     MEDIA_ENQUEUE = 2097152
+
+    MEDIA_QUEUE = 4194304
 
 
 # These SUPPORT_* constants are deprecated as of Home Assistant 2022.5.

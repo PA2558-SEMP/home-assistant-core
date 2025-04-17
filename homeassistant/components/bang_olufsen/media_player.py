@@ -507,6 +507,52 @@ class BangOlufsenMediaPlayer(BangOlufsenEntity, MediaPlayerEntity):
             # Video
             await self._client.post_remote_trigger(id=key)
 
+    async def handle_play_queue_item(
+        self, media_type: str, media_id: str, kwargs: dict
+    ) -> None:
+        """Handle adding a media item to the play queue."""
+        try:
+            # Play Deezer flow.
+            if media_id == "flow" and media_type == BangOlufsenMediaType.DEEZER:
+                deezer_id = None
+                if "id" in kwargs[ATTR_MEDIA_EXTRA]:
+                    deezer_id = kwargs[ATTR_MEDIA_EXTRA]["id"]
+                await self._client.start_deezer_flow(
+                    user_flow=UserFlow(user_id=deezer_id)
+                )
+            # Play a playlist or album.
+            elif any(match in media_id for match in ("playlist", "album")):
+                start_from = 0
+                if "start_from" in kwargs[ATTR_MEDIA_EXTRA]:
+                    start_from = kwargs[ATTR_MEDIA_EXTRA]["start_from"]
+                await self._client.add_to_queue(
+                    play_queue_item=PlayQueueItem(
+                        provider=PlayQueueItemType(value=media_type),
+                        start_now_from_position=start_from,
+                        type="playlist",
+                        uri=media_id,
+                    )
+                )
+            # Play a track.
+            else:
+                await self._client.add_to_queue(
+                    play_queue_item=PlayQueueItem(
+                        provider=PlayQueueItemType(value=media_type),
+                        start_now_from_position=0,
+                        type="track",
+                        uri=media_id,
+                    )
+                )
+        except ApiException as error:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="play_media_error",
+                translation_placeholders={
+                    "media_type": media_type,
+                    "error_message": json.loads(error.body)["message"],
+                },
+            ) from error
+
     async def async_play_media(
         self,
         media_type: MediaType | str,
@@ -605,53 +651,7 @@ class BangOlufsenMediaPlayer(BangOlufsenEntity, MediaPlayerEntity):
             await self._client.activate_preset(id=int(media_id))
 
         elif media_type in (BangOlufsenMediaType.DEEZER, BangOlufsenMediaType.TIDAL):
-            try:
-                # Play Deezer flow.
-                if media_id == "flow" and media_type == BangOlufsenMediaType.DEEZER:
-                    deezer_id = None
-
-                    if "id" in kwargs[ATTR_MEDIA_EXTRA]:
-                        deezer_id = kwargs[ATTR_MEDIA_EXTRA]["id"]
-
-                    await self._client.start_deezer_flow(
-                        user_flow=UserFlow(user_id=deezer_id)
-                    )
-
-                # Play a playlist or album.
-                elif any(match in media_id for match in ("playlist", "album")):
-                    start_from = 0
-                    if "start_from" in kwargs[ATTR_MEDIA_EXTRA]:
-                        start_from = kwargs[ATTR_MEDIA_EXTRA]["start_from"]
-
-                    await self._client.add_to_queue(
-                        play_queue_item=PlayQueueItem(
-                            provider=PlayQueueItemType(value=media_type),
-                            start_now_from_position=start_from,
-                            type="playlist",
-                            uri=media_id,
-                        )
-                    )
-
-                # Play a track.
-                else:
-                    await self._client.add_to_queue(
-                        play_queue_item=PlayQueueItem(
-                            provider=PlayQueueItemType(value=media_type),
-                            start_now_from_position=0,
-                            type="track",
-                            uri=media_id,
-                        )
-                    )
-
-            except ApiException as error:
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="play_media_error",
-                    translation_placeholders={
-                        "media_type": media_type,
-                        "error_message": json.loads(error.body)["message"],
-                    },
-                ) from error
+            await self.handle_play_queue_item(media_type, media_id, kwargs)
 
     async def async_browse_media(
         self,

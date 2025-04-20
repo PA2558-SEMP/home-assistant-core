@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import openai
+from requests import exceptions
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
@@ -109,20 +110,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: OpenAIConfigEntry) -> bo
     # check CONF_ENABLE_MEMORY
     if entry.data.get(CONF_ENABLE_MEMORY):
         # if enabled, only for letta with LM Studio Backend
-        from .letta_api import list_LLM_backends  # pylint: disable=import-outside-toplevel  # noqa: I001
+        from .letta_api import list_llm_backends  # pylint: disable=import-outside-toplevel  # noqa: I001
 
         try:
-            async_result = await list_LLM_backends(
+            async_result = await list_llm_backends(
                 hass, base_url=base_url, headers={"Authorization": "Bearer token"}
             )  # headers is unnecessary
             if async_result.status_code != 200:
-                # import json  # pylint: disable=import-outside-toplevel  # noqa: I001
-
-                # response_json = json.loads(async_result.text)[0]
-
-                # LOGGER.info(f"response_json:{response_json}")  # noqa: G004
                 async_result.raise_for_status()
-                from requests import exceptions
         except ConnectionRefusedError as err:
             raise ConfigEntryNotReady(err) from err
         except exceptions.HTTPError as err:

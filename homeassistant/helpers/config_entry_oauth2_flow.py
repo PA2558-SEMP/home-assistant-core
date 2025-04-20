@@ -243,6 +243,7 @@ class AbstractOAuth2FlowHandler(config_entries.ConfigFlow, metaclass=ABCMeta):
             )
 
         self.external_data: Any = None
+
         self.flow_impl: AbstractOAuth2Implementation | None = None
 
     @property
@@ -259,6 +260,7 @@ class AbstractOAuth2FlowHandler(config_entries.ConfigFlow, metaclass=ABCMeta):
         """Generate a url for the user to authorize."""
 
         assert self.flow_impl is not None
+
         url = await self.flow_impl.async_generate_authorize_url(self.flow_id)
         return str(URL(url).update_query(self.extra_authorize_data))
 
@@ -384,6 +386,7 @@ class AbstractOAuth2FlowHandler(config_entries.ConfigFlow, metaclass=ABCMeta):
         """
 
         assert self.flow_impl is not None
+
         return self.async_create_entry(title=self.flow_impl.name, data=data)
 
     async def async_step_user(

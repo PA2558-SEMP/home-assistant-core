@@ -39,7 +39,10 @@ from .models import PermRequired, ProtectEntityDescription, ProtectEventMixin
 _KEY_DOOR = "door"
 STATUSLIGHTON="Status light on"
 MDILEDON="mdi:led-on"
+
+
 MDIFULLSCREEN="mdi:fullscreen"
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ProtectBinaryEntityDescription(

@@ -74,17 +74,16 @@ PLATFORMS = [
 @dataclass
 class AbodeSystem:
     """Abode System class."""
-
     abode: Abode
     polling: bool
     entity_ids: set[str | None] = field(default_factory=set)
     logout_listener: CALLBACK_TYPE | None = None
 
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant) -> bool:
     """Set up the Abode component."""
     setup_hass_services(hass)
     return True
+
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

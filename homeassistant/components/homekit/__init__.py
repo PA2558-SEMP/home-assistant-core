@@ -810,6 +810,9 @@ class HomeKit:
         await trigger_accessory.async_attach()
         self.bridge.add_accessory(trigger_accessory)
 
+
+        
+
     @callback
     def async_remove_bridge_accessory(self, aid: int) -> HomeAccessory | None:
         """Try adding accessory to bridge if configured beforehand."""

@@ -195,7 +195,7 @@ async def test_async_run_hass_job_eager_background(hass: HomeAssistant) -> None:
 
 async def test_async_run_hass_job_background_synchronous(hass: HomeAssistant) -> None:
     """Test scheduling a coro as an eager background task with async_run_hass_job."""
-
+    """Ensure that non-suspending coroutines can be scheduled as eager background tasks."""
     async def job_that_does_not_suspends():
         pass
 
@@ -3450,7 +3450,7 @@ async def test_async_listen_with_run_immediately_deprecated(
     method: str,
 ) -> None:
     """Test async_add_job warns about its deprecation."""
-
+    """A dummy callback used to trigger the deprecation warning."""
     async def _test(event: ha.Event):
         pass
 

@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Any, cast, overload
+from typing import Any, TypeVar, cast, overload
 
 from homeassistant.core import callback
 
 from .const import REDACTED
 
 
-@overload
-def async_redact_data(data: Mapping, to_redact: Iterable[Any]) -> dict: ...
+@overload  # noqa: F821
+def async_redact_data(data: Mapping, to_redact: Iterable[Any]) -> dict: ...  # noqa: D103
 
+# Define _T before it is used
+_T = TypeVar("_T")
 
 @overload
 def async_redact_data[_T](data: _T, to_redact: Iterable[Any]) -> _T: ...

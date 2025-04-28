@@ -31,10 +31,10 @@ async def test_valid_path_setup(hass: HomeAssistant) -> None:
 
 
 def test_event() -> None:
-    """Check that Home Assistant events are fired correctly on watchdog event."""
+    """Test that the correct event is fired for a created file.This simulates a file creation event and checks that Home Assistant correctly handles the event by firing the appropriate event on its event bus."""
 
     class MockPatternMatchingEventHandler:
-        """Mock base class for the pattern matcher event handler."""
+        """Mock class simulating PatternMatchingEventHandler with an empty initializer."""
 
         def __init__(self, patterns) -> None:
             pass
@@ -61,10 +61,10 @@ def test_event() -> None:
 
 
 def test_move_event() -> None:
-    """Check that Home Assistant events are fired correctly on watchdog event."""
+    """Test that the correct event is fired for a moved file.This simulates a file move event and checks that Home Assistant.correctly handles the event by firing the appropriate event on its event bus."""
 
     class MockPatternMatchingEventHandler:
-        """Mock base class for the pattern matcher event handler."""
+        """Mock class to simulate the pattern matching event handler.Replicates a synchronous task to test non-suspending behavior in Home Assistant."""
 
         def __init__(self, patterns) -> None:
             pass

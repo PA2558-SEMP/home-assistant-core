@@ -39,7 +39,12 @@ from .models import PermRequired, ProtectEntityDescription, ProtectEventMixin
 _KEY_DOOR = "door"
 STATUSLIGHTON="Status light on"
 MDILEDON="mdi:led-on"
+
+
+MDIWALK="mdi:walk"
+
 MDIFULLSCREEN="mdi:fullscreen"
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ProtectBinaryEntityDescription(
@@ -157,7 +162,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="smart_person",
         name="Detections: person",
-        icon="mdi:walk",
+        icon=MDIWALK,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="can_detect_person",
         ufp_value="is_person_detection_on",
@@ -283,7 +288,7 @@ CAMERA_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="track_person",
         name="Tracking: person",
-        icon="mdi:walk",
+        icon=MDIWALK,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_required_field="feature_flags.is_ptz",
         ufp_value="is_person_tracking_enabled",
@@ -382,7 +387,7 @@ SENSE_SENSORS: tuple[ProtectBinaryEntityDescription, ...] = (
     ProtectBinaryEntityDescription(
         key="motion_enabled",
         name="Motion detection",
-        icon="mdi:walk",
+        icon=MDIWALK,
         entity_category=EntityCategory.DIAGNOSTIC,
         ufp_value="motion_settings.is_enabled",
         ufp_perm=PermRequired.NO_WRITE,
@@ -447,7 +452,7 @@ EVENT_SENSORS: tuple[ProtectBinaryEventEntityDescription, ...] = (
     ProtectBinaryEventEntityDescription(
         key="smart_obj_person",
         name="Person detected",
-        icon="mdi:walk",
+        icon=MDIWALK,
         ufp_obj_type=SmartDetectObjectType.PERSON,
         ufp_required_field="can_detect_person",
         ufp_enabled="is_person_detection_on",

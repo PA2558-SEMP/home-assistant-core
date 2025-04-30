@@ -448,16 +448,7 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
 
     async def async_handle_homekit_reset_accessory(service: ServiceCall) -> None:
         """Handle reset accessory HomeKit service call."""
-        for homekit in _async_all_homekit_instances(hass):
-            if homekit.status != STATUS_RUNNING:
-                _LOGGER.warning(
-                    "HomeKit is not running. Either it is waiting to be "
-                    "started or has been stopped"
-                )
-                continue
-
-            entity_ids = cast(list[str], service.data.get("entity_id"))
-            await homekit.async_reset_accessories(entity_ids)
+        await _handle_reset_accessory(hass, service)
 
     hass.services.async_register(
         DOMAIN,
@@ -468,27 +459,7 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
 
     async def async_handle_homekit_unpair(service: ServiceCall) -> None:
         """Handle unpair HomeKit service call."""
-        referenced = async_extract_referenced_entity_ids(hass, service)
-        dev_reg = dr.async_get(hass)
-        for device_id in referenced.referenced_devices:
-            if not (dev_reg_ent := dev_reg.async_get(device_id)):
-                raise HomeAssistantError(f"No device found for device id: {device_id}")
-            macs = [
-                cval
-                for ctype, cval in dev_reg_ent.connections
-                if ctype == dr.CONNECTION_NETWORK_MAC
-            ]
-            matching_instances = [
-                homekit
-                for homekit in _async_all_homekit_instances(hass)
-                if homekit.driver and dr.format_mac(homekit.driver.state.mac) in macs
-            ]
-            if not matching_instances:
-                raise HomeAssistantError(
-                    f"No homekit accessory found for device id: {device_id}"
-                )
-            for homekit in matching_instances:
-                homekit.async_unpair()
+        await _handle_unpair(hass, service)
 
     hass.services.async_register(
         DOMAIN,
@@ -498,28 +469,8 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
     )
 
     async def _handle_homekit_reload(service: ServiceCall) -> None:
-        """Handle start HomeKit service call."""
-        config = await async_integration_yaml_config(hass, DOMAIN)
-
-        if not config or DOMAIN not in config:
-            return
-
-        current_entries = hass.config_entries.async_entries(DOMAIN)
-        entries_by_name, entries_by_port = _async_get_imported_entries_indices(
-            current_entries
-        )
-
-        for conf in config[DOMAIN]:
-            _async_update_config_entry_from_yaml(
-                hass, entries_by_name, entries_by_port, conf
-            )
-
-        reload_tasks = [
-            create_eager_task(hass.config_entries.async_reload(entry.entry_id))
-            for entry in current_entries
-        ]
-
-        await asyncio.gather(*reload_tasks)
+        """Handle reload HomeKit service call."""
+        await _reload_homekit(hass)
 
     async_register_admin_service(
         hass,
@@ -527,6 +478,77 @@ def _async_register_events_and_services(hass: HomeAssistant) -> None:
         SERVICE_RELOAD,
         _handle_homekit_reload,
     )
+
+
+async def _handle_reset_accessory(hass: HomeAssistant, service: ServiceCall) -> None:
+    """Process the reset accessory service call."""
+    for homekit in _async_all_homekit_instances(hass):
+        if homekit.status != STATUS_RUNNING:
+            _LOGGER.warning(
+                "HomeKit is not running. Either it is waiting to be started or has been stopped"
+            )
+            continue
+
+        entity_ids = cast(list[str], service.data.get("entity_id"))
+        await homekit.async_reset_accessories(entity_ids)
+
+
+async def _handle_unpair(hass: HomeAssistant, service: ServiceCall) -> None:
+    """Process the unpair service call."""
+    referenced = async_extract_referenced_entity_ids(hass, service)
+    dev_reg = dr.async_get(hass)
+
+    for device_id in referenced.referenced_devices:
+        await _unpair_device(hass, dev_reg, device_id)
+
+
+async def _unpair_device(hass: HomeAssistant, dev_reg, device_id: str) -> None:
+    """Unpair a single device."""
+    dev_reg_ent = dev_reg.async_get(device_id)
+    if not dev_reg_ent:
+        raise HomeAssistantError(f"No device found for device id: {device_id}")
+
+    macs = [
+        cval
+        for ctype, cval in dev_reg_ent.connections
+        if ctype == dr.CONNECTION_NETWORK_MAC
+    ]
+    matching_instances = [
+        homekit
+        for homekit in _async_all_homekit_instances(hass)
+        if homekit.driver and dr.format_mac(homekit.driver.state.mac) in macs
+    ]
+    if not matching_instances:
+        raise HomeAssistantError(
+            f"No HomeKit accessory found for device id: {device_id}"
+        )
+
+    for homekit in matching_instances:
+        homekit.async_unpair()
+
+
+async def _reload_homekit(hass: HomeAssistant) -> None:
+    """Reload HomeKit configurations."""
+    config = await async_integration_yaml_config(hass, DOMAIN)
+    if not config or DOMAIN not in config:
+        return
+
+    current_entries = hass.config_entries.async_entries(DOMAIN)
+    entries_by_name, entries_by_port = _async_get_imported_entries_indices(
+        current_entries
+    )
+
+    for conf in config[DOMAIN]:
+        _async_update_config_entry_from_yaml(
+            hass, entries_by_name, entries_by_port, conf
+        )
+
+    reload_tasks = [
+        create_eager_task(hass.config_entries.async_reload(entry.entry_id))
+        for entry in current_entries
+    ]
+    await asyncio.gather(*reload_tasks)
+
 
 
 class HomeKit:
@@ -819,44 +841,68 @@ class HomeKit:
         return None
 
     async def async_configure_accessories(self) -> list[State]:
-        """Configure accessories for the included states."""
-        dev_reg = dr.async_get(self.hass)
-        ent_reg = er.async_get(self.hass)
-        device_lookup: dict[str, dict[tuple[str, str | None], str]] = {}
-        entity_states: list[State] = []
-        entity_filter = self._filter.get_filter()
-        entries = ent_reg.entities
-        for state in self.hass.states.async_all():
-            entity_id = state.entity_id
-            if not entity_filter(entity_id):
+    """Configure accessories for the included states."""
+    dev_reg = dr.async_get(self.hass)
+    ent_reg = er.async_get(self.hass)
+    device_lookup: dict[str, dict[tuple[str, str | None], str]] = {}
+    entity_states: list[State] = []
+    entity_filter = self._filter.get_filter()
+
+    for state in self.hass.states.async_all():
+        entity_id = state.entity_id
+        if not entity_filter(entity_id):
+            continue
+
+        if ent_reg_ent := ent_reg.async_get(entity_id):
+            if self._should_skip_entity(ent_reg_ent, entity_id):
                 continue
 
-            if ent_reg_ent := ent_reg.async_get(entity_id):
-                if (
-                    ent_reg_ent.entity_category is not None
-                    or ent_reg_ent.hidden_by is not None
-                ) and not self._filter.explicitly_included(entity_id):
-                    continue
+            await self._handle_entity(ent_reg_ent, dev_reg, entity_id, device_lookup, state)
 
-                await self._async_set_device_info_attributes(
-                    ent_reg_ent, dev_reg, entity_id
-                )
-                if device_id := ent_reg_ent.device_id:
-                    if device_id not in device_lookup:
-                        device_lookup[device_id] = {
-                            (
-                                entry.domain,
-                                entry.device_class or entry.original_device_class,
-                            ): entry.entity_id
-                            for entry in entries.get_entries_for_device_id(device_id)
-                        }
-                    self._async_configure_linked_sensors(
-                        ent_reg_ent, device_lookup[device_id], state
-                    )
+        entity_states.append(state)
 
-            entity_states.append(state)
+    return entity_states
 
-        return entity_states
+
+def _should_skip_entity(self, ent_reg_ent, entity_id: str) -> bool:
+    """Determine if an entity should be skipped."""
+    return (
+        (ent_reg_ent.entity_category is not None or ent_reg_ent.hidden_by is not None)
+        and not self._filter.explicitly_included(entity_id)
+    )
+
+
+async def _handle_entity(
+    self,
+    ent_reg_ent,
+    dev_reg,
+    entity_id: str,
+    device_lookup: dict[str, dict[tuple[str, str | None], str]],
+    state: State,
+) -> None:
+    """Handle the configuration of a single entity."""
+    await self._async_set_device_info_attributes(ent_reg_ent, dev_reg, entity_id)
+    if device_id := ent_reg_ent.device_id:
+        if device_id not in device_lookup:
+            device_lookup[device_id] = self._create_device_lookup(device_id, ent_reg)
+        self._async_configure_linked_sensors(
+            ent_reg_ent, device_lookup[device_id], state
+        )
+
+
+def _create_device_lookup(
+    self, device_id: str, ent_reg
+) -> dict[tuple[str, str | None], str]:
+    """Create a device lookup for a given device ID."""
+    entries = ent_reg.entities
+    return {
+        (
+            entry.domain,
+            entry.device_class or entry.original_device_class,
+        ): entry.entity_id
+        for entry in entries.get_entries_for_device_id(device_id)
+    }
+
 
     async def async_start(self, *args: Any) -> None:
         """Load storage and start."""

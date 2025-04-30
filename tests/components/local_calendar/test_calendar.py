@@ -3,6 +3,7 @@
 import datetime
 import textwrap
 
+from aioresponses import aioresponses
 import pytest
 
 from homeassistant.const import STATE_OFF, STATE_ON
@@ -12,6 +13,7 @@ import homeassistant.util.dt as dt_util
 
 from .conftest import (
     FRIENDLY_NAME,
+    MOCK_ICS_CONTENT_STR,
     TEST_ENTITY,
     ClientFixture,
     GetEventsFn,
@@ -19,6 +21,36 @@ from .conftest import (
 )
 
 from tests.common import MockConfigEntry
+
+
+@pytest.fixture
+def mock_aiohttp():
+    """Fixture to mock aiohttp requests using aioresponses."""
+    with aioresponses(passthrough=["http://127.0.0.1", "http://localhost"]) as m:
+        m.get("http://example.com/api/data", body=MOCK_ICS_CONTENT_STR, status=200)
+        yield m
+
+
+@pytest.mark.asyncio
+async def test_ics_calendar(
+    mock_aiohttp: aioresponses,
+    hass: HomeAssistant,
+    setup_ics_integration: None,
+    get_events: GetEventsFn,
+) -> None:
+    """Test fetching and parsing an ICS file from link."""
+    mock_aiohttp.assert_called_once_with("http://example.com/api/data")
+
+    events = await get_events("2023-01-01T00:00:00", "2024-01-01T00:00:00")
+    assert len(events) == 1
+    assert list(map(event_fields, events)) == [
+        {
+            "summary": "Test Event",
+            "start": {"dateTime": "2023-10-20T07:00:00-06:00"},
+            "end": {"dateTime": "2023-10-20T08:00:00-06:00"},
+            "location": "Test Location",
+        }
+    ]
 
 
 async def test_empty_calendar(

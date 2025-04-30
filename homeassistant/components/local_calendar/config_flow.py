@@ -9,10 +9,11 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.util import slugify
 
-from .const import CONF_CALENDAR_NAME, CONF_STORAGE_KEY, DOMAIN
+from .const import CONF_CALENDAR_NAME, CONF_STORAGE_KEY, CONF_URL_NAME, DOMAIN
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
+        vol.Optional(CONF_URL_NAME): str,
         vol.Required(CONF_CALENDAR_NAME): str,
     }
 )

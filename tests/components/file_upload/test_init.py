@@ -142,8 +142,10 @@ async def test_upload_large_file_fails(
         yield MockPathOpen()
 
     class MockPathOpen:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            pass
+        def __init__(self, file_path: str, mode: str = 'rb', *args: Any, **kwargs: Any) -> None:
+          # Initialize mock with file path and mode if needed
+          self.file_path = file_path
+          self.mode = mode
 
         def write(self, data: bytes) -> None:
             raise OSError("Boom")

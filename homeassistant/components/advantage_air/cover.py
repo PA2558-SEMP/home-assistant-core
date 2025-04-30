@@ -29,24 +29,35 @@ async def async_setup_entry(
     instance = config_entry.runtime_data
 
     entities: list[CoverEntity] = []
-    if aircons := instance.coordinator.data.get("aircons"):
+
+    def add_zone_vent_controls():
+        """Add zone vent controls for aircons."""
+        aircons = instance.coordinator.data.get("aircons", {})
         for ac_key, ac_device in aircons.items():
             for zone_key, zone in ac_device["zones"].items():
-                # Only add zone vent controls when zone in vent control mode.
-                if zone["type"] == 0:
+                if zone["type"] == 0:  # Zone is in vent control mode
                     entities.append(AdvantageAirZoneVent(instance, ac_key, zone_key))
-    if things := instance.coordinator.data.get("myThings"):
-        for thing in things["things"].values():
-            if thing["channelDipState"] in [1, 2]:  # 1 = "Blind", 2 = "Blind 2"
+
+    def add_things_controls():
+        """Add things controls based on channelDipState."""
+        things = instance.coordinator.data.get("myThings", {}).get("things", {})
+        for thing in things.values():
+            if thing["channelDipState"] in [1, 2]:  # Blind types
                 entities.append(
                     AdvantageAirThingCover(instance, thing, CoverDeviceClass.BLIND)
                 )
-            elif thing["channelDipState"] == 3:  # 3 = "Garage door"
+            elif thing["channelDipState"] == 3:  # Garage door
                 entities.append(
                     AdvantageAirThingCover(instance, thing, CoverDeviceClass.GARAGE)
                 )
-    async_add_entities(entities)
 
+    # Add entities for zones and things
+    # Call helper functions
+    add_zone_vent_controls()
+    add_things_controls()
+
+    # Add entities to Home Assistant
+    async_add_entities(entities)
 
 class AdvantageAirZoneVent(AdvantageAirZoneEntity, CoverEntity):
     """Advantage Air Zone Vent."""

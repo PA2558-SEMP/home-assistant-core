@@ -1,9 +1,6 @@
 """Support for Abode Security System alarm control panels."""
-
 from __future__ import annotations
-
 from jaraco.abode.devices.alarm import Alarm
-
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelEntity,
     AlarmControlPanelEntityFeature,
@@ -16,21 +13,18 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
 from . import AbodeSystem
 from .const import DOMAIN
 from .entity import AbodeDevice
 
-
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up Abode alarm control panel device."""
     data: AbodeSystem = hass.data[DOMAIN]
     async_add_entities(
         [AbodeAlarm(data, await hass.async_add_executor_job(data.abode.get_alarm))]
     )
-
 
 class AbodeAlarm(AbodeDevice, AlarmControlPanelEntity):
     """An alarm_control_panel implementation for Abode."""

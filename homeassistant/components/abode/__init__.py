@@ -81,7 +81,7 @@ class AbodeSystem:
     logout_listener: CALLBACK_TYPE | None = None
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant) -> bool:
     """Set up the Abode component."""
     setup_hass_services(hass)
     return True

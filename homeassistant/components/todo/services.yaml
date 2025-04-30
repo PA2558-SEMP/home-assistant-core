@@ -46,6 +46,20 @@ add_item:
       example: "A more complete description of the to-do item than that provided by the summary."
       selector:
         text:
+    priority:
+      filter:
+        supported_features:
+          - todo.TodoListEntityFeature.SET_PRIORITY_ON_ITEM
+      example: "medium"
+      default: medium
+      selector:
+        select:
+          translation_key: priority
+          options:
+            - low
+            - medium
+            - high
+          multiple: true
 update_item:
   target:
     entity:
@@ -91,6 +105,20 @@ update_item:
       example: "A more complete description of the to-do item than that provided by the summary."
       selector:
         text:
+    priority:
+      filter:
+        supported_features:
+          - todo.TodoListEntityFeature.SET_PRIORITY_ON_ITEM
+      example: "medium"
+      default: medium
+      selector:
+        select:
+          translation_key: priority
+          options:
+            - low
+            - medium
+            - high
+          multiple: true
 remove_item:
   target:
     entity:

@@ -1,5 +1,9 @@
 """Support for the Abode Security System."""
 
+"""Test for new changes"""
+
+"""Test for new changes 2"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -134,31 +138,42 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def setup_hass_services(hass: HomeAssistant) -> None:
-    """Home Assistant services."""
+    """Setup Home Assistant services for Abode."""
 
-    def change_setting(call: ServiceCall) -> None:
-        """Change an Abode system setting."""
-        setting = call.data[ATTR_SETTING]
-        value = call.data[ATTR_VALUE]
+    def handle_service(call: ServiceCall, service_type: str) -> None:
+        """Handle service calls for Abode."""
+        if service_type == "change_setting":
+            setting = call.data[ATTR_SETTING]
+            value = call.data[ATTR_VALUE]
+            try:
+                hass.data[DOMAIN].abode.set_setting(setting, value)
+            except AbodeException as ex:
+                LOGGER.warning("Failed to change setting: %s", ex)
 
-        try:
-            hass.data[DOMAIN].abode.set_setting(setting, value)
-        except AbodeException as ex:
-            LOGGER.warning(ex)
+        elif service_type == "capture_image":
+            entity_ids = call.data[ATTR_ENTITY_ID]
+            target_entities = [
+                entity_id
+                for entity_id in hass.data[DOMAIN].entity_ids
+                if entity_id in entity_ids
+            ]
 
-    def capture_image(call: ServiceCall) -> None:
-        """Capture a new image."""
-        entity_ids = call.data[ATTR_ENTITY_ID]
+            for entity_id in target_entities:
+                signal = f"abode_camera_capture_{entity_id}"
+                dispatcher_send(hass, signal)
 
-        target_entities = [
-            entity_id
-            for entity_id in hass.data[DOMAIN].entity_ids
-            if entity_id in entity_ids
-        ]
+    hass.services.register(
+        DOMAIN,
+        "change_setting",
+        lambda call: handle_service(call, "change_setting"),
+    )
 
-        for entity_id in target_entities:
-            signal = f"abode_camera_capture_{entity_id}"
-            dispatcher_send(hass, signal)
+    hass.services.register(
+        DOMAIN,
+        "capture_image",
+        lambda call: handle_service(call, "capture_image"),
+    )
+
 
     def trigger_automation(call: ServiceCall) -> None:
         """Trigger an Abode automation."""
